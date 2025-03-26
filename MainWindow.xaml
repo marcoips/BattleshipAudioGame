@@ -7,6 +7,10 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-
+        
+        <Label Content="BattleShip - AudioGame" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="24" FontWeight="Bold" Foreground="Black" Background="White" Padding="10" BorderBrush="Black" BorderThickness="2" Margin="0,26,0,0" />
+        <Button Content="Iniciar Jogo" HorizontalAlignment="Center" Margin="0,313,0,0" VerticalAlignment="Top"/>
+        <Button Content="Tutorial" HorizontalAlignment="Center" Margin="0,350,0,0" VerticalAlignment="Top" Width="64"/>
+        
     </Grid>
 </Window>
