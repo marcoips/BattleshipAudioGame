@@ -9,12 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="ViewModel\" />
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.43.0" />
+    <PackageReference Include="System.Speech" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.43.0" />
-    <PackageReference Include="System.Speech" Version="9.0.3" />
+    <Folder Include="Serviços\" />
+    <Folder Include="Views\" />
   </ItemGroup>
 
 </Project>
