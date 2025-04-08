@@ -28,8 +28,8 @@ public partial class MainWindow : Window
 
         //speech recognition
         _recognizer = new SpeechRecognitionEngine();
-        var choices = new Choices("play", "stop", "exit");
-        _recognizer.LoadGrammar(new Grammar(new GrammarBuilder("play")));
+        var choices = new Choices("play", "stop", "exit","yes","no");
+        _recognizer.LoadGrammar(new Grammar(new GrammarBuilder(choices)));
         _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
         _recognizer.SetInputToDefaultAudioDevice();
         _recognizer.RecognizeAsync(RecognizeMode.Multiple);
@@ -41,13 +41,26 @@ public partial class MainWindow : Window
         Console.WriteLine($"Recognized: {e.Result.Text}");
         if (e.Result.Text == "play")
         {
-            _synthesizer.Speak("Hello, welcome to the Battleship Audio Game!");
+            Button_Click(this, new RoutedEventArgs());
         }
     }
 
     private void Button_Click(object sender, RoutedEventArgs e)
     {
+        MainContent.Children.Clear();
         _synthesizer.Speak("Hello, welcome to the Battleship Audio Game!");
+
+        var newText = new TextBlock
+        {
+            Text = "Do you wanna hear the tutorial?",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 20
+        };
+        
+
+        MainContent.Children.Add(newText);
+        _synthesizer.Speak("Do you wanna hear the tutorial?");
 
     }
         

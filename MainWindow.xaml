@@ -6,8 +6,12 @@
         xmlns:local="clr-namespace:BattleshipAudioGame"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Button Content="Button" HorizontalAlignment="Center" Margin="0,247,0,0" VerticalAlignment="Top" Click="Button_Click"/>
+    <Grid Name="MainContent">
+        <TextBlock Text="Welcome to the Battleship Audio Game!" 
+           HorizontalAlignment="Center" VerticalAlignment="Center" 
+           FontSize="20" />
+        <Button Content="Start" HorizontalAlignment="Center" Margin="0,247,0,0" VerticalAlignment="Top" Click="Button_Click" Height="54" Width="96"/>
+        <Label Content="BattleShip - AudioGame" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="24" FontWeight="Bold" Foreground="Black" Background="White" Padding="10" BorderBrush="Black" BorderThickness="2" Margin="0,26,0,0" />
 
     </Grid>
 </Window>
