@@ -17,7 +17,7 @@ namespace BattleshipAudioGame.Serviços
         {
             _recognizer = new SpeechRecognitionEngine();
             _recognizer.LoadGrammar(new DictationGrammar());
-            _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
+           // _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
         }
 
 
