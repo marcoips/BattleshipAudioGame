@@ -5,7 +5,9 @@
        xmlns:local="clr-namespace:BattleshipAudioGame.Views"
        WindowStartupLocation="CenterScreen"
        Title="BattleShip Game" Height="450" Width="800">
-
-  
-
+    <Grid>
+        <!-- Frame que mostrará as diferentes páginas -->
+        <Frame x:Name="MainFrame" 
+               NavigationUIVisibility="Hidden" />
+    </Grid>
 </Window>
