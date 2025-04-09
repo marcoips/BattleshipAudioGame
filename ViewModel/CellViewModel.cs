@@ -20,6 +20,7 @@ namespace BattleshipAudioGame.ViewModel
             get => _cell.IsHit;
             set
             {
+                //Quando IsHit muda, chamamos OnPropertyChanged(); para notificar a UI
                 if (_cell.IsHit != value)
                 {
                     _cell.IsHit = value;
@@ -33,6 +34,7 @@ namespace BattleshipAudioGame.ViewModel
 
         // Propriedade que descreve o estado (útil para a tela e fala).
 
+        //Status vai ser usado para exibir texto no botão, ou para leitura de tela.
         public string Status
         {
             get
