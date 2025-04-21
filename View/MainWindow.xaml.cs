@@ -12,6 +12,7 @@ using System.Speech.Synthesis;
 using System.Speech.Recognition;
 using System;
 using BattleshipAudioGame;
+using BattleshipAudioGame.Model;
 
 namespace BattleshipAudioGame;
 
@@ -125,6 +126,71 @@ public partial class MainWindow : Window
         var playerBoardViewModel = new BoardViewModel();
         var cpuBoardViewModel = new BoardViewModel();
 
+        /////JOGADOR///////
+        // Add ships to the player's board
+        var carrier = new Navio("Carrier", 5, false, new List<string> { "A1", "A2", "A3", "A4", "A5" });
+        var battleship = new Navio("Battleship", 4, false, new List<string> { "B1", "B2", "B3", "B4" });
+        var cruiser = new Navio("Cruiser", 3, false, new List<string> { "C1", "C2", "C3" });
+        var destroyer = new Navio("Destroyer", 2, false, new List<string> { "D1", "D2" });
+        var submarine = new Navio("Submarine", 3, false, new List<string> { "E1", "E2", "E3" });
+
+        playerBoardViewModel.Navios = new List<Navio> { carrier, battleship, cruiser, destroyer, submarine };
+
+        // Update the grid cells to reflect the ship's position
+        foreach (var ship in playerBoardViewModel.Navios)
+        {
+            foreach (var position in ship.localizacao)
+            {
+                var row = position[0] - 'A'; // Convert row letter to index (e.g., 'A' -> 0)
+                var col = int.Parse(position.Substring(1)) - 1; // Convert column number to index (e.g., "1" -> 0)
+
+                var cell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+                if (cell != null)
+                {
+                    cell.Content = ship.nome_navio[0].ToString(); // Use the first letter of the ship's name
+                    cell.Background = Brushes.Green; // Change background color to indicate ship presence
+                }
+            }
+        }
+
+        /////////CPU//////////
+        // Add ships to the CPU's board with random positions
+        var occupiedPositions = new List<string>();
+        var cpuCarrier = new Navio("Carrier", 5, false, GeneratePositionsCPU(5, occupiedPositions));
+        occupiedPositions.AddRange(cpuCarrier.localizacao);
+
+        var cpuBattleship = new Navio("Battleship", 4, false, GeneratePositionsCPU(4, occupiedPositions));
+        occupiedPositions.AddRange(cpuBattleship.localizacao);
+
+        var cpuCruiser = new Navio("Cruiser", 3, false, GeneratePositionsCPU(3, occupiedPositions));
+        occupiedPositions.AddRange(cpuCruiser.localizacao);
+
+        var cpuDestroyer = new Navio("Destroyer", 2, false, GeneratePositionsCPU(2, occupiedPositions));
+        occupiedPositions.AddRange(cpuDestroyer.localizacao);
+
+        var cpuSubmarine = new Navio("Submarine", 3, false, GeneratePositionsCPU(3, occupiedPositions));
+        occupiedPositions.AddRange(cpuSubmarine.localizacao);
+
+        cpuBoardViewModel.Navios = new List<Navio> { cpuCarrier, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine };
+
+        // Update the grid cells to reflect the CPU's ships
+        foreach (var ship in cpuBoardViewModel.Navios)
+        {
+            foreach (var position in ship.localizacao)
+            {
+                var row = position[0] - 'A'; // Convert row letter to index (e.g., 'A' -> 0)
+                var col = int.Parse(position.Substring(1)) - 1; // Convert column number to index (e.g., "1" -> 0)
+
+                var cell = cpuBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+                if (cell != null)
+                {
+                    cell.Content = ship.nome_navio[0].ToString();
+                    cell.Background = Brushes.Red;
+                }
+            }
+        }
+
+
         // Create a container to hold both grids
         var container = new Grid();
         container.ColumnDefinitions.Add(new ColumnDefinition());
@@ -214,7 +280,8 @@ public partial class MainWindow : Window
             {
                 Content = cell.Content, // Bind content from the ViewModel
                 HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Background = cell.Background
             };
 
             // Add the button to the grid
@@ -224,5 +291,47 @@ public partial class MainWindow : Window
         }
 
         return gridContainer;
+    }
+
+    private List<string> GeneratePositionsCPU(int shipSize, List<string> occupiedPositions)
+    {
+        var random = new Random();
+        var positions = new List<string>();
+        bool isValidPlacement = false;
+
+        while (!isValidPlacement)
+        {
+            positions.Clear();
+
+            // Randomly choose orientation: 0 = horizontal, 1 = vertical
+            var orientation = random.Next(0, 2);
+
+            // Randomly choose starting position
+            var startRow = random.Next(0, 10);
+            var startCol = random.Next(0, 10);
+
+            // Generate positions based on orientation
+            for (int i = 0; i < shipSize; i++)
+            {
+                if (orientation == 0) // Horizontal
+                {
+                    if (startCol + shipSize > 10) break; // Ensure it fits horizontally
+                    positions.Add($"{(char)('A' + startRow)}{startCol + i + 1}");
+                }
+                else // Vertical
+                {
+                    if (startRow + shipSize > 10) break; // Ensure it fits vertically
+                    positions.Add($"{(char)('A' + startRow + i)}{startCol + 1}");
+                }
+            }
+
+            // Check if all positions are valid and not overlapping
+            if (positions.Count == shipSize && !positions.Any(pos => occupiedPositions.Contains(pos)))
+            {
+                isValidPlacement = true;
+            }
+        }
+
+        return positions;
     }
 }

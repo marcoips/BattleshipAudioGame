@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Windows.Media;
 using BattleshipAudioGame.Model;
 
 namespace BattleshipAudioGame;
@@ -42,5 +43,6 @@ public class GridCell
     public int Row { get; set; }
     public int Column { get; set; }
     public string Content { get; set; }
+    public Brush Background { get; set; } = Brushes.LightGray;
 }
 
