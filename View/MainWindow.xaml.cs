@@ -121,18 +121,59 @@ public partial class MainWindow : Window
 
         _synthesizer.Speak("Game Start. Place your ships");
 
-        // Create an instance of the BoardViewModel
-        var boardViewModel = new BoardViewModel();
+        // Create an instance of the BoardViewModel for both player and CPU
+        var playerBoardViewModel = new BoardViewModel();
+        var cpuBoardViewModel = new BoardViewModel();
 
+        // Create a container to hold both grids
+        var container = new Grid();
+        container.ColumnDefinitions.Add(new ColumnDefinition());
+        container.ColumnDefinitions.Add(new ColumnDefinition());
+
+        // Create the player's grid
+        var playerGrid = CreateBoardGrid(playerBoardViewModel, "Player Board");
+        Grid.SetColumn(playerGrid, 0);
+        container.Children.Add(playerGrid);
+
+        // Create the CPU's grid
+        var cpuGrid = CreateBoardGrid(cpuBoardViewModel, "CPU Board");
+        Grid.SetColumn(cpuGrid, 1);
+        container.Children.Add(cpuGrid);
+
+        // Add the container to the MainContent
+        MainContent.Children.Add(container);
+
+        // Update the context to "game"
+        _currentContext = "game";
+    }
+
+    private Grid CreateBoardGrid(BoardViewModel boardViewModel, string title)
+    {
         // Create a Grid to display the board
         var gridContainer = new Grid();
 
-        // Define 11 rows and 11 columns (1 extra for labels)
+        // Define 12 rows (1 extra for title) and 11 columns (1 extra for labels)
+        for (int i = 0; i < 12; i++)
+        {
+            gridContainer.RowDefinitions.Add(new RowDefinition());
+        }
         for (int i = 0; i < 11; i++)
         {
             gridContainer.ColumnDefinitions.Add(new ColumnDefinition());
-            gridContainer.RowDefinitions.Add(new RowDefinition());
         }
+
+        // Add the title at the top
+        var titleLabel = new TextBlock
+        {
+            Text = title,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 20,
+            FontWeight = FontWeights.Bold
+        };
+        Grid.SetRow(titleLabel, 0);
+        Grid.SetColumnSpan(titleLabel, 11);
+        gridContainer.Children.Add(titleLabel);
 
         // Add row labels (A-J) to the first column
         for (int row = 1; row <= 10; row++)
@@ -161,12 +202,12 @@ public partial class MainWindow : Window
                 FontSize = 16
             };
 
-            Grid.SetRow(label, 0);
+            Grid.SetRow(label, 1);
             Grid.SetColumn(label, col);
             gridContainer.Children.Add(label);
         }
 
-        // Add buttons to the grid (10x10 starting from row 1, column 1)
+        // Add buttons to the grid (10x10 starting from row 2, column 1)
         foreach (var cell in boardViewModel.Cells)
         {
             var button = new Button
@@ -177,16 +218,11 @@ public partial class MainWindow : Window
             };
 
             // Add the button to the grid
-            Grid.SetRow(button, cell.Row + 1);
+            Grid.SetRow(button, cell.Row + 2);
             Grid.SetColumn(button, cell.Column + 1);
             gridContainer.Children.Add(button);
         }
 
-        // Add the gridContainer to the MainContent container
-        MainContent.Children.Add(gridContainer);
-
-        // Update the context to "game"
-        _currentContext = "game";
+        return gridContainer;
     }
-
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using WpfApp1.Model;
 
 namespace BattleshipAudioGame;
 
@@ -7,6 +8,7 @@ public class BoardViewModel
     public ObservableCollection<string> RowLabels { get; set; }
     public ObservableCollection<string> ColumnLabels { get; set; }
     public ObservableCollection<GridCell> Cells { get; set; }
+    public List<Navio> Navios { get; set; }
 
     public BoardViewModel()
     {
@@ -28,6 +30,10 @@ public class BoardViewModel
                 });
             }
         }
+
+        
+
+
     }
 }
 
@@ -37,3 +43,4 @@ public class GridCell
     public int Column { get; set; }
     public string Content { get; set; }
 }
+
