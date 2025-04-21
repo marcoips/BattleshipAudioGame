@@ -11,6 +11,7 @@ using System.Windows.Shapes;
 using System.Speech.Synthesis;
 using System.Speech.Recognition;
 using System;
+using BattleshipAudioGame;
 
 namespace BattleshipAudioGame;
 
@@ -73,6 +74,15 @@ public partial class MainWindow : Window
             {
                 _synthesizer.Speak("Alright, skipping the tutorial.");
                 _currentContext = string.Empty; // Reset context
+                DisplayGrid();
+            }
+        }
+        else if (_currentContext == "game")
+        {
+            if (e.Result.Text == "stop")
+            {
+                _synthesizer.Speak("Game paused. Say 'play' to continue.");
+                _currentContext = string.Empty; // Reset context
             }
         }
     }
@@ -109,39 +119,71 @@ public partial class MainWindow : Window
     {
         MainContent.Children.Clear();
 
-        var grid = new Grid();
+        _synthesizer.Speak("Game Start. Place your ships");
 
-        // Define 10 rows and 10 columns
-        for (int i = 0; i < 10; i++)
+        // Create an instance of the BoardViewModel
+        var boardViewModel = new BoardViewModel();
+
+        // Create a Grid to display the board
+        var gridContainer = new Grid();
+
+        // Define 11 rows and 11 columns (1 extra for labels)
+        for (int i = 0; i < 11; i++)
         {
-            grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.RowDefinitions.Add(new RowDefinition());
+            gridContainer.ColumnDefinitions.Add(new ColumnDefinition());
+            gridContainer.RowDefinitions.Add(new RowDefinition());
         }
 
-        // Letters for rows (A-J)
-        string[] rowLabels = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
-
-        // Add buttons to each cell
-        for (int row = 0; row < 10; row++)
+        // Add row labels (A-J) to the first column
+        for (int row = 1; row <= 10; row++)
         {
-            for (int col = 0; col < 10; col++)
+            var label = new TextBlock
             {
-                var button = new Button
-                {
-                    Content = $"{rowLabels[row]}{col + 1}", // Combine letter and number
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    VerticalAlignment = VerticalAlignment.Stretch
-                };
+                Text = boardViewModel.RowLabels[row - 1],
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 16
+            };
 
-                // Add the button to the grid
-                Grid.SetRow(button, row);
-                Grid.SetColumn(button, col);
-                grid.Children.Add(button);
-            }
+            Grid.SetRow(label, row);
+            Grid.SetColumn(label, 0);
+            gridContainer.Children.Add(label);
         }
 
-        // Add the grid to the MainContent container
-        MainContent.Children.Add(grid);
+        // Add column labels (1-10) to the first row
+        for (int col = 1; col <= 10; col++)
+        {
+            var label = new TextBlock
+            {
+                Text = boardViewModel.ColumnLabels[col - 1],
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 16
+            };
+
+            Grid.SetRow(label, 0);
+            Grid.SetColumn(label, col);
+            gridContainer.Children.Add(label);
+        }
+
+        // Add buttons to the grid (10x10 starting from row 1, column 1)
+        foreach (var cell in boardViewModel.Cells)
+        {
+            var button = new Button
+            {
+                Content = cell.Content, // Bind content from the ViewModel
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch
+            };
+
+            // Add the button to the grid
+            Grid.SetRow(button, cell.Row + 1);
+            Grid.SetColumn(button, cell.Column + 1);
+            gridContainer.Children.Add(button);
+        }
+
+        // Add the gridContainer to the MainContent container
+        MainContent.Children.Add(gridContainer);
 
         // Update the context to "game"
         _currentContext = "game";
