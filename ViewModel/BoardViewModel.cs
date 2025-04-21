@@ -1,5 +1,5 @@
 ﻿using System.Collections.ObjectModel;
-using WpfApp1.Model;
+using BattleshipAudioGame.Model;
 
 namespace BattleshipAudioGame;
 
