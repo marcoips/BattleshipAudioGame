@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private SpeechSynthesizer _synthesizer;
 
     private string _currentContext = string.Empty;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -33,9 +34,23 @@ public partial class MainWindow : Window
         _currentContext = "start";
 
     //speech recognition
-    _recognizer = new SpeechRecognitionEngine();
-        var choices = new Choices("play", "stop", "exit","yes","no");
-        _recognizer.LoadGrammar(new Grammar(new GrammarBuilder(choices)));
+        _recognizer = new SpeechRecognitionEngine();
+
+        var positionChoices = new Choices();
+        for (char letter = 'A'; letter <= 'J'; letter++) // Letras A-J
+        {
+            for (int number = 1; number <= 10; number++) // Números 1-10
+            {
+                positionChoices.Add($"{letter}{number}");
+            }
+        }
+        var fixedChoices = new Choices("play", "stop", "exit","yes","no");
+
+        var grammarBuilder = new GrammarBuilder();
+        grammarBuilder.Append(new Choices(fixedChoices, positionChoices));
+        var grammar = new Grammar(grammarBuilder);
+
+        _recognizer.LoadGrammar(grammar);
         _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
         _recognizer.SetInputToDefaultAudioDevice();
         _recognizer.RecognizeAsync(RecognizeMode.Multiple);
@@ -80,10 +95,35 @@ public partial class MainWindow : Window
         }
         else if (_currentContext == "game")
         {
+            string input = e.Result.Text;
             if (e.Result.Text == "stop")
             {
                 _synthesizer.Speak("Game paused. Say 'play' to continue.");
                 _currentContext = string.Empty; // Reset context
+            }
+            else if (input.Length >= 2 && char.IsLetter(input[0]) && int.TryParse(input.Substring(1), out int number))
+            {
+                // Concatenar a letra e o número
+                string position = $"{char.ToUpper(input[0])}{number}";
+                Console.WriteLine($"Position: {position}");
+
+                _synthesizer.Speak($"Did you say position {position}");
+                _currentContext = "confirm_position";             
+
+
+            }
+        }
+        else if (_currentContext == "confirm_position")
+        {
+            if (e.Result.Text == "yes")
+            {
+                _synthesizer.Speak("Position confirmed. Proceeding with the game.");
+                _currentContext = "game";
+            }
+            else if (e.Result.Text == "no")
+            {
+                _synthesizer.Speak("Position not confirmed. Please say the position again.");
+                _currentContext = "game";
             }
         }
     }
@@ -128,7 +168,7 @@ public partial class MainWindow : Window
 
         /////JOGADOR///////
         // Add ships to the player's board
-        var carrier = new Navio("Carrier", 5, false, new List<string> { "A1", "A2", "A3", "A4", "A5" });
+        var carrier = new Navio("Carrier", 5, false, new List<string> { });
         var battleship = new Navio("Battleship", 4, false, new List<string> { "B1", "B2", "B3", "B4" });
         var cruiser = new Navio("Cruiser", 3, false, new List<string> { "C1", "C2", "C3" });
         var destroyer = new Navio("Destroyer", 2, false, new List<string> { "D1", "D2" });
