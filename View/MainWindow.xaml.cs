@@ -25,6 +25,8 @@ public partial class MainWindow : Window
     private string _selectedPosition = string.Empty;
     private string _selectedDirection = string.Empty;
 
+    private bool _firstShipAnnounced = false;
+
     private BoardViewModel playerBoardViewModel;
     private BoardViewModel cpuBoardViewModel;
 
@@ -105,6 +107,7 @@ public partial class MainWindow : Window
             {
                 _synthesizer.Speak("Alright, skipping the tutorial.");
                 _currentContext = string.Empty; // Reset context
+                _synthesizer.Speak("Game start. Place your ships");
                 DisplayGrid();
             }
         }
@@ -190,8 +193,6 @@ public partial class MainWindow : Window
     {
         MainContent.Children.Clear();
 
-        _synthesizer.Speak("Game Start. Place your ships");
-
         // Create a container to hold both grids
         var container = new Grid();
         container.ColumnDefinitions.Add(new ColumnDefinition());
@@ -212,6 +213,14 @@ public partial class MainWindow : Window
 
         // Update the context to "game"
         _currentContext = "game";
+
+        if (!_firstShipAnnounced && shipsToPlace.Count > 0)
+        {
+            _synthesizer.Speak($"The {shipsToPlace[0].nome_navio} is first. Please place it.");
+            _firstShipAnnounced = true; // Mark the first ship as announced
+        }
+
+
     }
 
     private Grid CreateBoardGrid(BoardViewModel boardViewModel, string title)
@@ -253,7 +262,7 @@ public partial class MainWindow : Window
                 FontSize = 16
             };
 
-            Grid.SetRow(label, row);
+            Grid.SetRow(label, row + 1);
             Grid.SetColumn(label, 0);
             gridContainer.Children.Add(label);
         }
@@ -438,15 +447,7 @@ public partial class MainWindow : Window
         // Refresh the player's grid
         DisplayGrid();
 
-        // Check if there are more ships to place
-        if (shipsToPlace.Count > 0)
-        {
-            _synthesizer.Speak($"The {shipsToPlace[0].nome_navio} is next. Please place it.");
-        }
-        else
-        {
-            _synthesizer.Speak("All ships have been placed. Starting the game.");
-        }
+        
 
         return true;
     }
