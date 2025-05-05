@@ -32,7 +32,7 @@ public class BoardViewModel
             }
         }
 
-        
+        Navios = new List<Navio>();
 
 
     }

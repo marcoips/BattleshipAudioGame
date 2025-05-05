@@ -26,6 +26,12 @@ public partial class MainWindow : Window
 
     private string _currentContext = string.Empty;
 
+    private string _selectedPosition = string.Empty;
+    private string _selectedDirection = string.Empty;
+
+    private BoardViewModel playerBoardViewModel;
+    private BoardViewModel cpuBoardViewModel;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -33,7 +39,7 @@ public partial class MainWindow : Window
 
         _currentContext = "start";
 
-    //speech recognition
+        //speech recognition
         _recognizer = new SpeechRecognitionEngine();
 
         var positionChoices = new Choices();
@@ -44,7 +50,7 @@ public partial class MainWindow : Window
                 positionChoices.Add($"{letter}{number}");
             }
         }
-        var fixedChoices = new Choices("play", "stop", "exit","yes","no");
+        var fixedChoices = new Choices("play", "stop", "exit","yes","no", "horizontal", "vertical");
 
         var grammarBuilder = new GrammarBuilder();
         grammarBuilder.Append(new Choices(fixedChoices, positionChoices));
@@ -54,6 +60,10 @@ public partial class MainWindow : Window
         _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
         _recognizer.SetInputToDefaultAudioDevice();
         _recognizer.RecognizeAsync(RecognizeMode.Multiple);
+
+        playerBoardViewModel = new BoardViewModel();
+        cpuBoardViewModel = new BoardViewModel();
+        GenerateCpuShips(cpuBoardViewModel);
 
     }
 
@@ -96,34 +106,44 @@ public partial class MainWindow : Window
         else if (_currentContext == "game")
         {
             string input = e.Result.Text;
-            if (e.Result.Text == "stop")
+
+            if (input.Length >= 2 && char.IsLetter(input[0]) && int.TryParse(input.Substring(1), out int number))
             {
-                _synthesizer.Speak("Game paused. Say 'play' to continue.");
-                _currentContext = string.Empty; // Reset context
-            }
-            else if (input.Length >= 2 && char.IsLetter(input[0]) && int.TryParse(input.Substring(1), out int number))
-            {
-                // Concatenar a letra e o número
-                string position = $"{char.ToUpper(input[0])}{number}";
-                Console.WriteLine($"Position: {position}");
-
-                _synthesizer.Speak($"Did you say position {position}");
-                _currentContext = "confirm_position";             
-
-
+                _selectedPosition = $"{char.ToUpper(input[0])}{number}";
+                _synthesizer.Speak($"You selected position {_selectedPosition}, sounds correct?");
+                _currentContext = "confirm_position";
             }
         }
         else if (_currentContext == "confirm_position")
         {
             if (e.Result.Text == "yes")
             {
-                _synthesizer.Speak("Position confirmed. Proceeding with the game.");
-                _currentContext = "game";
+                _synthesizer.Speak("Position confirmed. Now say the direction: horizontal or vertical?");
+                _currentContext = "select_direction";
             }
             else if (e.Result.Text == "no")
             {
                 _synthesizer.Speak("Position not confirmed. Please say the position again.");
                 _currentContext = "game";
+            }
+        }
+        else if (_currentContext == "select_direction")
+        {
+            if (e.Result.Text == "horizontal" || e.Result.Text == "vertical")
+            {
+                _selectedDirection = e.Result.Text;
+                _synthesizer.Speak($"You selected {_selectedDirection} direction. Placing the ship...");
+
+                if (TryPlaceShip(_selectedPosition, _selectedDirection))
+                {
+                    _synthesizer.Speak("Ship placed successfully.");
+                    _currentContext = "game";
+                }
+                else
+                {
+                    _synthesizer.Speak("Invalid placement. Please try again.");
+                    _currentContext = "game";
+                }
             }
         }
     }
@@ -162,75 +182,6 @@ public partial class MainWindow : Window
 
         _synthesizer.Speak("Game Start. Place your ships");
 
-        // Create an instance of the BoardViewModel for both player and CPU
-        var playerBoardViewModel = new BoardViewModel();
-        var cpuBoardViewModel = new BoardViewModel();
-
-        /////JOGADOR///////
-        // Add ships to the player's board
-        var carrier = new Navio("Carrier", 5, false, new List<string> { });
-        var battleship = new Navio("Battleship", 4, false, new List<string> { "B1", "B2", "B3", "B4" });
-        var cruiser = new Navio("Cruiser", 3, false, new List<string> { "C1", "C2", "C3" });
-        var destroyer = new Navio("Destroyer", 2, false, new List<string> { "D1", "D2" });
-        var submarine = new Navio("Submarine", 3, false, new List<string> { "E1", "E2", "E3" });
-
-        playerBoardViewModel.Navios = new List<Navio> { carrier, battleship, cruiser, destroyer, submarine };
-
-        // Update the grid cells to reflect the ship's position
-        foreach (var ship in playerBoardViewModel.Navios)
-        {
-            foreach (var position in ship.localizacao)
-            {
-                var row = position[0] - 'A'; // Convert row letter to index (e.g., 'A' -> 0)
-                var col = int.Parse(position.Substring(1)) - 1; // Convert column number to index (e.g., "1" -> 0)
-
-                var cell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
-                if (cell != null)
-                {
-                    cell.Content = ship.nome_navio[0].ToString(); // Use the first letter of the ship's name
-                    cell.Background = Brushes.Green; // Change background color to indicate ship presence
-                }
-            }
-        }
-
-        /////////CPU//////////
-        // Add ships to the CPU's board with random positions
-        var occupiedPositions = new List<string>();
-        var cpuCarrier = new Navio("Carrier", 5, false, GeneratePositionsCPU(5, occupiedPositions));
-        occupiedPositions.AddRange(cpuCarrier.localizacao);
-
-        var cpuBattleship = new Navio("Battleship", 4, false, GeneratePositionsCPU(4, occupiedPositions));
-        occupiedPositions.AddRange(cpuBattleship.localizacao);
-
-        var cpuCruiser = new Navio("Cruiser", 3, false, GeneratePositionsCPU(3, occupiedPositions));
-        occupiedPositions.AddRange(cpuCruiser.localizacao);
-
-        var cpuDestroyer = new Navio("Destroyer", 2, false, GeneratePositionsCPU(2, occupiedPositions));
-        occupiedPositions.AddRange(cpuDestroyer.localizacao);
-
-        var cpuSubmarine = new Navio("Submarine", 3, false, GeneratePositionsCPU(3, occupiedPositions));
-        occupiedPositions.AddRange(cpuSubmarine.localizacao);
-
-        cpuBoardViewModel.Navios = new List<Navio> { cpuCarrier, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine };
-
-        // Update the grid cells to reflect the CPU's ships
-        foreach (var ship in cpuBoardViewModel.Navios)
-        {
-            foreach (var position in ship.localizacao)
-            {
-                var row = position[0] - 'A'; // Convert row letter to index (e.g., 'A' -> 0)
-                var col = int.Parse(position.Substring(1)) - 1; // Convert column number to index (e.g., "1" -> 0)
-
-                var cell = cpuBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
-                if (cell != null)
-                {
-                    cell.Content = ship.nome_navio[0].ToString();
-                    cell.Background = Brushes.Red;
-                }
-            }
-        }
-
-
         // Create a container to hold both grids
         var container = new Grid();
         container.ColumnDefinitions.Add(new ColumnDefinition());
@@ -241,7 +192,7 @@ public partial class MainWindow : Window
         Grid.SetColumn(playerGrid, 0);
         container.Children.Add(playerGrid);
 
-        // Create the CPU's grid
+        // Create the CPU's grid (static)
         var cpuGrid = CreateBoardGrid(cpuBoardViewModel, "CPU Board");
         Grid.SetColumn(cpuGrid, 1);
         container.Children.Add(cpuGrid);
@@ -252,6 +203,7 @@ public partial class MainWindow : Window
         // Update the context to "game"
         _currentContext = "game";
     }
+
 
     private Grid CreateBoardGrid(BoardViewModel boardViewModel, string title)
     {
@@ -374,4 +326,99 @@ public partial class MainWindow : Window
 
         return positions;
     }
+    private void GenerateCpuShips(BoardViewModel boardViewModel)
+    {
+        var occupiedPositions = new List<string>();
+
+        // Add ships to the CPU's board with random positions
+        var cpuCarrier = new Navio("Carrier", 5, false, GeneratePositionsCPU(5, occupiedPositions));
+        occupiedPositions.AddRange(cpuCarrier.localizacao);
+
+        var cpuBattleship = new Navio("Battleship", 4, false, GeneratePositionsCPU(4, occupiedPositions));
+        occupiedPositions.AddRange(cpuBattleship.localizacao);
+
+        var cpuCruiser = new Navio("Cruiser", 3, false, GeneratePositionsCPU(3, occupiedPositions));
+        occupiedPositions.AddRange(cpuCruiser.localizacao);
+
+        var cpuDestroyer = new Navio("Destroyer", 2, false, GeneratePositionsCPU(2, occupiedPositions));
+        occupiedPositions.AddRange(cpuDestroyer.localizacao);
+
+        var cpuSubmarine = new Navio("Submarine", 3, false, GeneratePositionsCPU(3, occupiedPositions));
+        occupiedPositions.AddRange(cpuSubmarine.localizacao);
+
+        boardViewModel.Navios = new List<Navio> { cpuCarrier, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine };
+
+        // Update the grid cells to reflect the CPU's ships
+        foreach (var ship in boardViewModel.Navios)
+        {
+            foreach (var position in ship.localizacao)
+            {
+                var row = position[0] - 'A'; // Convert row letter to index (e.g., 'A' -> 0)
+                var col = int.Parse(position.Substring(1)) - 1; // Convert column number to index (e.g., "1" -> 0)
+
+                var cell = boardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+                if (cell != null)
+                {
+                    cell.Content = ship.nome_navio[0].ToString(); // Use the first letter of the ship's name
+                    cell.Background = Brushes.Red; // Change background color to indicate ship presence
+                }
+            }
+        }
+    }
+
+    private bool TryPlaceShip(string startPosition, string direction)
+    {
+        // Example: Place a ship of size 3
+        int shipSize = 3;
+
+        // Parse the starting position
+        int startRow = startPosition[0] - 'A';
+        int startCol = int.Parse(startPosition.Substring(1)) - 1;
+
+        var positions = new List<string>();
+
+        for (int i = 0; i < shipSize; i++)
+        {
+            if (direction == "horizontal")
+            {
+                if (startCol + i >= 10) return false; // Out of bounds
+                positions.Add($"{(char)('A' + startRow)}{startCol + i + 1}");
+            }
+            else if (direction == "vertical")
+            {
+                if (startRow + i >= 10) return false; // Out of bounds
+                positions.Add($"{(char)('A' + startRow + i)}{startCol + 1}");
+            }
+        }
+
+        // Check for overlap with existing ships
+        if (positions.Any(pos => playerBoardViewModel.Navios.Any(ship => ship.localizacao.Contains(pos))))
+        {
+            return false;
+        }
+
+        // Add the ship to the player's board
+        var newShip = new Navio("CustomShip", shipSize, false, positions);
+        playerBoardViewModel.Navios.Add(newShip);
+
+        // Update the grid cells
+        foreach (var position in positions)
+        {
+            var row = position[0] - 'A';
+            var col = int.Parse(position.Substring(1)) - 1;
+
+            var cell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+            if (cell != null)
+            {
+                cell.Content = newShip.nome_navio[0].ToString();
+                cell.Background = Brushes.Green;
+            }
+        }
+
+        // Refresh the player's grid only
+        DisplayGrid();
+
+        return true;
+    }
+
 }
