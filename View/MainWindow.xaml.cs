@@ -1,16 +1,12 @@
 ﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Speech.Synthesis;
 using System.Speech.Recognition;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using BattleshipAudioGame;
 using BattleshipAudioGame.Model;
 
@@ -32,6 +28,8 @@ public partial class MainWindow : Window
     private BoardViewModel playerBoardViewModel;
     private BoardViewModel cpuBoardViewModel;
 
+    private List<Navio> shipsToPlace;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -39,18 +37,18 @@ public partial class MainWindow : Window
 
         _currentContext = "start";
 
-        //speech recognition
+        // Speech recognition
         _recognizer = new SpeechRecognitionEngine();
 
         var positionChoices = new Choices();
-        for (char letter = 'A'; letter <= 'J'; letter++) // Letras A-J
+        for (char letter = 'A'; letter <= 'J'; letter++) // Letters A-J
         {
-            for (int number = 1; number <= 10; number++) // Números 1-10
+            for (int number = 1; number <= 10; number++) // Numbers 1-10
             {
                 positionChoices.Add($"{letter}{number}");
             }
         }
-        var fixedChoices = new Choices("play", "stop", "exit","yes","no", "horizontal", "vertical");
+        var fixedChoices = new Choices("play", "stop", "exit", "yes", "no", "horizontal", "vertical");
 
         var grammarBuilder = new GrammarBuilder();
         grammarBuilder.Append(new Choices(fixedChoices, positionChoices));
@@ -65,29 +63,36 @@ public partial class MainWindow : Window
         cpuBoardViewModel = new BoardViewModel();
         GenerateCpuShips(cpuBoardViewModel);
 
+        // Initialize the list of ships to place
+        shipsToPlace = new List<Navio>
+        {
+            new Navio("Carrier", 5, false, new List<string>()),
+            new Navio("Battleship", 4, false, new List<string>()),
+            new Navio("Cruiser", 3, false, new List<string>()),
+            new Navio("Submarine", 3, false, new List<string>()),
+            new Navio("Destroyer", 2, false, new List<string>())
+        };
     }
 
     private void Recognizer_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
     {
         Console.WriteLine($"Recognized: {e.Result.Text}");
 
-        //exit geral
+        // Exit command
         if (e.Result.Text == "exit")
         {
             _synthesizer.Speak("Exiting the game. Goodbye!");
             Application.Current.Shutdown(); // Close the application
-            return; // Exit the method to prevent further processing
+            return;
         }
 
-
-        //diferentes fases do jogo
+        // Different phases of the game
         if (_currentContext == "start")
         {
             if (e.Result.Text == "play")
             {
                 Button_Click(this, new RoutedEventArgs());
             }
-
         }
         else if (_currentContext == "tutorial")
         {
@@ -136,8 +141,16 @@ public partial class MainWindow : Window
 
                 if (TryPlaceShip(_selectedPosition, _selectedDirection))
                 {
-                    _synthesizer.Speak("Ship placed successfully.");
-                    _currentContext = "game";
+                    if (shipsToPlace.Count > 0)
+                    {
+                        _synthesizer.Speak($"The {shipsToPlace[0].nome_navio} is next. Please place it.");
+                        _currentContext = "game"; // Continue placing ships
+                    }
+                    else
+                    {
+                        _synthesizer.Speak("All ships have been placed. Starting the game.");
+                        _currentContext = "start_game"; // Transition to the game phase
+                    }
                 }
                 else
                 {
@@ -160,13 +173,10 @@ public partial class MainWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             FontSize = 20
         };
-        
 
         MainContent.Children.Add(newText);
         _synthesizer.Speak("Do you wanna hear the tutorial?");
         _currentContext = "tutorial";
-
-
     }
 
     private void SpeakTutorial()
@@ -203,7 +213,6 @@ public partial class MainWindow : Window
         // Update the context to "game"
         _currentContext = "game";
     }
-
 
     private Grid CreateBoardGrid(BoardViewModel boardViewModel, string title)
     {
@@ -326,6 +335,7 @@ public partial class MainWindow : Window
 
         return positions;
     }
+
     private void GenerateCpuShips(BoardViewModel boardViewModel)
     {
         var occupiedPositions = new List<string>();
@@ -368,8 +378,15 @@ public partial class MainWindow : Window
 
     private bool TryPlaceShip(string startPosition, string direction)
     {
-        // Example: Place a ship of size 3
-        int shipSize = 3;
+        if (shipsToPlace.Count == 0)
+        {
+            _synthesizer.Speak("All ships have been placed. Starting the game.");
+            return false;
+        }
+
+        // Get the next ship to place
+        var currentShip = shipsToPlace[0];
+        int shipSize = currentShip.tamanho_navio;
 
         // Parse the starting position
         int startRow = startPosition[0] - 'A';
@@ -397,9 +414,9 @@ public partial class MainWindow : Window
             return false;
         }
 
-        // Add the ship to the player's board
-        var newShip = new Navio("CustomShip", shipSize, false, positions);
-        playerBoardViewModel.Navios.Add(newShip);
+        // Place the ship
+        currentShip.localizacao = positions;
+        playerBoardViewModel.Navios.Add(currentShip);
 
         // Update the grid cells
         foreach (var position in positions)
@@ -410,15 +427,27 @@ public partial class MainWindow : Window
             var cell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
             if (cell != null)
             {
-                cell.Content = newShip.nome_navio[0].ToString();
+                cell.Content = currentShip.nome_navio[0].ToString();
                 cell.Background = Brushes.Green;
             }
         }
 
-        // Refresh the player's grid only
+        // Remove the placed ship from the list
+        shipsToPlace.RemoveAt(0);
+
+        // Refresh the player's grid
         DisplayGrid();
+
+        // Check if there are more ships to place
+        if (shipsToPlace.Count > 0)
+        {
+            _synthesizer.Speak($"The {shipsToPlace[0].nome_navio} is next. Please place it.");
+        }
+        else
+        {
+            _synthesizer.Speak("All ships have been placed. Starting the game.");
+        }
 
         return true;
     }
-
 }
