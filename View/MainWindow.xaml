@@ -4,14 +4,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BattleshipAudioGame"
+        xmlns:vm="clr-namespace:BattleshipAudioGame.ViewModel"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid Name="MainContent">
-        <TextBlock Text="Welcome to the Battleship Audio Game!" 
-           HorizontalAlignment="Center" VerticalAlignment="Center" 
-           FontSize="20" />
-        <Button Content="Start" HorizontalAlignment="Center" Margin="0,247,0,0" VerticalAlignment="Top" Click="Button_Click" Height="54" Width="96"/>
-        <Label Content="BattleShip - AudioGame" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="24" FontWeight="Bold" Foreground="Black" Background="White" Padding="10" BorderBrush="Black" BorderThickness="2" Margin="0,26,0,0" />
 
-    </Grid>
+    <Window.DataContext>
+        <vm:MainWindowViewModel/>
+    </Window.DataContext>
+
+    <!-- mostra sempre a vista corrente -->
+    <ContentControl Content="{Binding CurrentView}"/>
+    
 </Window>
