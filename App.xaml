@@ -1,9 +1,14 @@
 ﻿<Application x:Class="BattleshipAudioGame.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:BattleshipAudioGame"
+             xmlns:vm="clr-namespace:BattleshipAudioGame.ViewModel"
+             xmlns:view="clr-namespace:BattleshipAudioGame.View"
              StartupUri="View/MainWindow.xaml">
+
     <Application.Resources>
-         
+        
+        <DataTemplate DataType="{x:Type vm:StartGameViewModel}">
+            <view:StartGameView/>
+        </DataTemplate>
     </Application.Resources>
 </Application>
