@@ -28,10 +28,14 @@ namespace BattleshipAudioGame.ViewModel
             //1. criar tabuleiro
             PlayerBoard = new BoardViewModel { BoardTitle = "Tabuleiro do Jogador" };
             CpuBoard = new BoardViewModel { BoardTitle = "Tabuleiro do CPU" };
-            
-            // COLOCAR NAVIOS
 
-            
+            /* 1️⃣  cria realmente as listas de navios */
+            CriarFrotaJogador();
+            GerarFrotaCPU();
+
+            // COLOCAR NAVIOS
+            PlayerBoard.PreencherNavios(PlayerBoard.Navios, Brushes.Green);
+            CpuBoard.PreencherNavios(CpuBoard.Navios, Brushes.Red);
         }
 
         private void CriarFrotaJogador()
@@ -90,7 +94,7 @@ namespace BattleshipAudioGame.ViewModel
                             posicoes.Clear();
                             break;
                         }
-                        posicoes.Add($"{(char)('A' + r0)}{c0 + i}");
+                        posicoes.Add($"{(char)('A' + r0)}{c0 + i + 1}");
 
                     }
                     else
