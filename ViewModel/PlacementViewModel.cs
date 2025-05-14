@@ -24,6 +24,8 @@ namespace BattleshipAudioGame.ViewModel
         {
             _navigate = navigate;
             ContinueCommand = new RelayCommand(_ => _navigate("Game"));// placeholder
+            
+
 
             //1. criar tabuleiro
             PlayerBoard = new BoardViewModel { BoardTitle = "Tabuleiro do Jogador" };
@@ -36,6 +38,8 @@ namespace BattleshipAudioGame.ViewModel
             // COLOCAR NAVIOS
             PlayerBoard.PreencherNavios(PlayerBoard.Navios, Brushes.Green);
             CpuBoard.PreencherNavios(CpuBoard.Navios, Brushes.Red);
+
+            
         }
 
         private void CriarFrotaJogador()

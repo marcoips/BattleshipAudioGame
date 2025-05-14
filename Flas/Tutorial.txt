@@ -1,0 +1,4 @@
+﻿Objective: Sink all of your opponent's ships.
+During your turn, state the row and column coordinates to attack.
+During positioning, choose the orientation and position of your ships.
+Good luck, commander!

@@ -24,6 +24,8 @@
             <Button Content="Jogar"    Command="{Binding PlayCommand}" />
             <Button Content="Tutorial" Command="{Binding TutorialCommand}" />
             <Button Content="Sair"     Command="{Binding ExitCommand}" />
-        </StackPanel>
+
+          
+    </StackPanel>
     
 </UserControl>
