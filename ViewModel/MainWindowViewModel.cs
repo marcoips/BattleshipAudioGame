@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Windows;
 using BattleshipAudioGame.Serviços;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BattleshipAudioGame.ViewModel
 {
@@ -21,20 +22,23 @@ namespace BattleshipAudioGame.ViewModel
                 OnPropertyChanged();
             }
         }
-
+        
         public bool IsAudioEnabled { get; private set; } // flag global
 
         public MainWindowViewModel()
             {
-                CurrentView = new StartGameViewModel(Navigate);
+            
+            CurrentView = new StartGameViewModel(Navigate);
             }
 
         private void Navigate(string dest)
         {
+            var voice = new VoiceRecognitionService();
             System.Diagnostics.Debug.WriteLine($"NAVIGATE → {dest}");
             CurrentView = dest switch
             {
-                "Placement" => new PlacementViewModel(Navigate/*, () => IsAudioEnabled*/), // criar mais tarde
+                
+                "Placement" => new PlacementViewModel(Navigate, voice, audioOn:true/*, () => IsAudioEnabled*/), // criar mais tarde
                 //"Game" => new BattleViewModel(Navigate),    // criar mais tarde
                 "Start" => new StartGameViewModel(Navigate),
                 _ => CurrentView

@@ -14,18 +14,15 @@ namespace BattleshipAudioGame.ViewModel
     public class PlacementViewModel : BaseViewModel
     {
         private readonly Action<string> _navigate;
-        private readonly Random _random = new ();
-
+        private readonly Random _random = new();
         public BoardViewModel CpuBoard { get; }
         public BoardViewModel PlayerBoard { get; }
-
         public ICommand ContinueCommand { get; }
-
         private int _navioIndex = 0;
         private bool _horizontal = true;
         private List<Navio> __naviosAColocar;
 
-        
+
 
         public ICommand AlterarOrientacaoCommand { get; }
         public ICommand ColocarNavioCommand { get; }
@@ -33,12 +30,24 @@ namespace BattleshipAudioGame.ViewModel
         public string NomeNavioAtual => __naviosAColocar[_navioIndex].nome_navio;
         public bool PodeContinuar { get; private set; } = false;
 
+        //Rechociemnto de voz
+        private readonly VoiceRecognitionService _voice;
+        private readonly bool _audioOn;
+        private enum Fase { Orientacao, Coordenadas }
+        private Fase _fase;
 
-        public PlacementViewModel(Action<string> navigate)
+        public PlacementViewModel(Action<string> navigate, VoiceRecognitionService voice, bool audioOn = true)
         {
             _navigate = navigate;
             //ContinueCommand = new RelayCommand(_ => _navigate("Game"));// placeholder
-            
+
+            _voice = voice;
+            _audioOn = audioOn;
+
+            if (_audioOn)
+            {
+                IniciarDialogo();
+            }
 
 
             //1. criar tabuleiro
@@ -65,7 +74,7 @@ namespace BattleshipAudioGame.ViewModel
 
             CpuBoard.PreencherNavios(CpuBoard.Navios, Brushes.Red);
 
-            
+
         }
 
         private void PrepararFrotaJogador()
@@ -113,14 +122,14 @@ namespace BattleshipAudioGame.ViewModel
             OnPropertyChanged(nameof(OrientacaoTexto));
         }
 
-        
+
         private void ColocarNavio(GridCell? cell)
         {
             Debug.WriteLine($"CLICK {cell?.Row},{cell?.Column}");
             if (PodeContinuar || cell is null) return; // já terminado ou clique inválido
 
             var navio = __naviosAColocar[_navioIndex];
-            var posicoes = GerarPosicoes (cell.Row, cell.Column, navio.tamanho_navio,_horizontal);
+            var posicoes = GerarPosicoes(cell.Row, cell.Column, navio.tamanho_navio, _horizontal);
 
             if (!ValidarPosicoes(posicoes))
             {
@@ -140,7 +149,7 @@ namespace BattleshipAudioGame.ViewModel
                 OnPropertyChanged(nameof(PodeContinuar));
 
                 CommandManager.InvalidateRequerySuggested(); //  ← força CanExecute a refazer
-                
+
             }
             else
             {
@@ -169,11 +178,11 @@ namespace BattleshipAudioGame.ViewModel
         }
 
 
-        private Navio CriarAleatorio (string nome, int tamanho, List<string> ocupadas)
+        private Navio CriarAleatorio(string nome, int tamanho, List<string> ocupadas)
         {
             var loc = GeneratePositionsCPU(tamanho, ocupadas);
             ocupadas.AddRange(loc);
-            return new Navio(nome,tamanho, false, loc);
+            return new Navio(nome, tamanho, false, loc);
 
         }
 
@@ -191,11 +200,11 @@ namespace BattleshipAudioGame.ViewModel
                 int r0 = _random.Next(0, 10);
                 int c0 = _random.Next(0, 10);
 
-                for(int i = 0; i< tamanho; i++)
+                for (int i = 0; i < tamanho; i++)
                 {
                     if (orient == 0)
                     {
-                        if(c0 + tamanho>10)
+                        if (c0 + tamanho > 10)
                         {
                             posicoes.Clear();
                             break;
@@ -205,7 +214,7 @@ namespace BattleshipAudioGame.ViewModel
                     }
                     else
                     {
-                        if(r0 + tamanho > 10)
+                        if (r0 + tamanho > 10)
                         {
                             posicoes.Clear();
                             break;
@@ -222,7 +231,96 @@ namespace BattleshipAudioGame.ViewModel
             return posicoes;
         }
 
+
+        //------------------------------- comandos voz-----------------
+        private void IniciarDialogo()
+        {
+            _fase = Fase.Orientacao;
+            _voice.OnCommand += HandleVoice;
+            _voice.Speak($"Vamos posicionar o {NomeNavioAtual}. Diga horizontal ou vertical.");
+            _voice.StartRecognition(new[] { "horizontal", "vertical" });
+        }
+
+        private void HandleVoice(string txt)
+        {
+            if (_fase == Fase.Orientacao)
+            {
+                if (txt.Contains("horizontal") || txt.Contains("vertical"))
+                {
+                    _horizontal = txt.Contains("horizontal");
+                    _voice.Speak($"{OrientacaoTexto}. Agora diga a coordenada, por exemplo linha 3 coluna 5.");
+                    _voice.StartRecognition(FrasesCoordenadas());
+                    _fase = Fase.Coordenadas;
+                }
+            }
+            else if (_fase == Fase.Coordenadas)
+            {
+                var cell = ParseCoordenada(txt); // devolve Gridcell ou nul
+                if (cell != null)
+                {
+                    _voice.Speak("Não entendi. Diga linha e coluna, por exemplo linha 4 coluna 7.");
+                    return;
+                }
+                if (!PodeContinuar && ValidarPosicoes(GerarPosicoes(cell.Row, cell.Column, __naviosAColocar[_navioIndex].tamanho_navio, _horizontal)))
+                {
+                    ColocarNavio(cell);               // reutiliza método visual
+                    if (!PodeContinuar)
+                    {
+                        _fase = Fase.Orientacao;
+                        _voice.Speak($"Bom. Próximo navio: {NomeNavioAtual}. Diga horizontal ou vertical.");
+                        _voice.StartRecognition(new[] { "horizontal", "vertical" });
+                    }
+                    else
+                    {
+                        _voice.Speak("Frota completa! Diga continuar para começar a batalha.");
+                        _voice.StartRecognition(new[] { "continuar" });
+                    }
+                }
+                else
+                {
+                    _voice.Speak("Posição inválida, tente outra coordenada.");
+                }
+            }
+            else if (txt.Contains("continuar") && PodeContinuar)
+            {
+                _voice.StopRecognition();
+                _navigate("Game");
+            }
+
+
+        }
+
+
+        private string[] FrasesCoordenadas()
+        {
+            var frases = new List<string>();
+            for (int r = 1; r <= 10; r++)
+                for (int c = 1; c <= 10; c++)
+                    frases.Add($"linha {r} coluna {c}");
+            return frases.ToArray();
+        }
+
+
+        private GridCell? ParseCoordenada(string txt)
+        {
+            // espera “linha 3 coluna 5”
+            var nums = System.Text.RegularExpressions.Regex
+                         .Matches(txt, @"\d+")
+                         .Select(m => int.Parse(m.Value))
+                         .ToArray();
+            if (nums.Length != 2) return null;
+            int r = nums[0] - 1;   // 0-based
+            int c = nums[1] - 1;
+            if (r < 0 || r > 9 || c < 0 || c > 9) return null;
+            return PlayerBoard.Cells.First(cell => cell.Row == r && cell.Column == c);
+        }
+
+
+
+
+
+
+
+
     }
-
-
 }
