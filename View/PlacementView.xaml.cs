@@ -23,6 +23,9 @@ namespace BattleshipAudioGame.View
         public PlacementView()
         {
             InitializeComponent();
+
+            Unloaded += (_, __) =>
+            (DataContext as IDisposable)?.Dispose();
         }
 
     }

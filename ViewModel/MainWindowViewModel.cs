@@ -22,25 +22,27 @@ namespace BattleshipAudioGame.ViewModel
                 OnPropertyChanged();
             }
         }
-        
+
+        private readonly VoiceRecognitionService _voice = new();  // ← única instância
+
         public bool IsAudioEnabled { get; private set; } // flag global
 
         public MainWindowViewModel()
             {
             
-            CurrentView = new StartGameViewModel(Navigate);
+            CurrentView = new StartGameViewModel(Navigate,_voice);
             }
 
         private void Navigate(string dest)
         {
-            var voice = new VoiceRecognitionService();
+           
             System.Diagnostics.Debug.WriteLine($"NAVIGATE → {dest}");
             CurrentView = dest switch
             {
                 
-                "Placement" => new PlacementViewModel(Navigate, voice, audioOn:true/*, () => IsAudioEnabled*/), // criar mais tarde
+                "Placement" => new PlacementViewModel(Navigate, _voice, audioOn:true),
                 //"Game" => new BattleViewModel(Navigate),    // criar mais tarde
-                "Start" => new StartGameViewModel(Navigate),
+                "Start" => new StartGameViewModel(Navigate, _voice),
                 _ => CurrentView
             };
             System.Diagnostics.Debug.WriteLine($"CurrentView = {CurrentView?.GetType().Name}");

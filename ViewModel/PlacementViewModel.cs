@@ -44,10 +44,7 @@ namespace BattleshipAudioGame.ViewModel
             _voice = voice;
             _audioOn = audioOn;
 
-            if (_audioOn)
-            {
-                IniciarDialogo();
-            }
+            
 
 
             //1. criar tabuleiro
@@ -58,22 +55,21 @@ namespace BattleshipAudioGame.ViewModel
             PrepararFrotaJogador();
             //CriarFrotaJogador();
             GerarFrotaCPU();
+            CpuBoard.PreencherNavios(CpuBoard.Navios, Brushes.Red);
 
             /* 3. comandos ------------------ */
             AlterarOrientacaoCommand = new RelayCommand(_ => AlternarOrientacao());
-
             ColocarNavioCommand = new RelayCommand(
-                param => ColocarNavio(param as GridCell)/*,
-                param => !PodeContinuar*/);
-
+                param => ColocarNavio(param as GridCell), p => !PodeContinuar);
             ContinueCommand = new RelayCommand(
                 _ => _navigate("Game"), _ => PodeContinuar); // só ativa no fim
+           
 
 
-            // COLOCAR NAVIOS
-
-            CpuBoard.PreencherNavios(CpuBoard.Navios, Brushes.Red);
-
+            if (_audioOn)
+            {
+                IniciarDialogo();
+            }
 
         }
 
@@ -148,7 +144,7 @@ namespace BattleshipAudioGame.ViewModel
                 PodeContinuar = true;
                 OnPropertyChanged(nameof(PodeContinuar));
 
-                CommandManager.InvalidateRequerySuggested(); //  ← força CanExecute a refazer
+                CommandManager.InvalidateRequerySuggested(); //   força CanExecute a refazer
 
             }
             else
@@ -232,12 +228,12 @@ namespace BattleshipAudioGame.ViewModel
         }
 
 
-        //------------------------------- comandos voz-----------------
+        //------------------------------- comandos voz---------------------
         private void IniciarDialogo()
         {
             _fase = Fase.Orientacao;
             _voice.OnCommand += HandleVoice;
-            _voice.Speak($"Vamos posicionar o {NomeNavioAtual}. Diga horizontal ou vertical.");
+            _voice.Speak($"Vamos posicionar o, {NomeNavioAtual}. Diga horizontal ou vertical.");
             _voice.StartRecognition(new[] { "horizontal", "vertical" });
         }
 
@@ -248,7 +244,7 @@ namespace BattleshipAudioGame.ViewModel
                 if (txt.Contains("horizontal") || txt.Contains("vertical"))
                 {
                     _horizontal = txt.Contains("horizontal");
-                    _voice.Speak($"{OrientacaoTexto}. Agora diga a coordenada, por exemplo linha 3 coluna 5.");
+                    _voice.Speak($"{OrientacaoTexto}. Now say the coordinate, for example row 3 column 5.");
                     _voice.StartRecognition(FrasesCoordenadas());
                     _fase = Fase.Coordenadas;
                 }
@@ -256,9 +252,9 @@ namespace BattleshipAudioGame.ViewModel
             else if (_fase == Fase.Coordenadas)
             {
                 var cell = ParseCoordenada(txt); // devolve Gridcell ou nul
-                if (cell != null)
+                if (cell == null)
                 {
-                    _voice.Speak("Não entendi. Diga linha e coluna, por exemplo linha 4 coluna 7.");
+                    _voice.Speak("I don't understand. Say row and column, for example row 4 column 7!");
                     return;
                 }
                 if (!PodeContinuar && ValidarPosicoes(GerarPosicoes(cell.Row, cell.Column, __naviosAColocar[_navioIndex].tamanho_navio, _horizontal)))
@@ -267,21 +263,21 @@ namespace BattleshipAudioGame.ViewModel
                     if (!PodeContinuar)
                     {
                         _fase = Fase.Orientacao;
-                        _voice.Speak($"Bom. Próximo navio: {NomeNavioAtual}. Diga horizontal ou vertical.");
+                        _voice.Speak($"Good. Próximo navio: {NomeNavioAtual}. Diga horizontal ou vertical.");
                         _voice.StartRecognition(new[] { "horizontal", "vertical" });
                     }
                     else
                     {
-                        _voice.Speak("Frota completa! Diga continuar para começar a batalha.");
-                        _voice.StartRecognition(new[] { "continuar" });
+                        _voice.Speak("Fleet complete! Say continue to begin the battle.");
+                        _voice.StartRecognition(new[] { "continue" });
                     }
                 }
                 else
                 {
-                    _voice.Speak("Posição inválida, tente outra coordenada.");
+                    _voice.Speak("Invalid position, try another coordinate.");
                 }
             }
-            else if (txt.Contains("continuar") && PodeContinuar)
+            else if (txt.Contains("continue") && PodeContinuar)
             {
                 _voice.StopRecognition();
                 _navigate("Game");
@@ -296,7 +292,7 @@ namespace BattleshipAudioGame.ViewModel
             var frases = new List<string>();
             for (int r = 1; r <= 10; r++)
                 for (int c = 1; c <= 10; c++)
-                    frases.Add($"linha {r} coluna {c}");
+                    frases.Add($"row {r} column {c}");
             return frases.ToArray();
         }
 
@@ -315,7 +311,12 @@ namespace BattleshipAudioGame.ViewModel
             return PlayerBoard.Cells.First(cell => cell.Row == r && cell.Column == c);
         }
 
-
+        protected override void Dispose(bool disposing)
+        {
+            if (!disposing) return;
+            _voice.OnCommand -= HandleVoice;
+            _voice.StopRecognition();
+        }
 
 
 
