@@ -23,6 +23,21 @@ namespace BattleshipAudioGame.View
         public BoardView()
         {
             InitializeComponent();
+            Loaded += (_, __) =>
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[BoardView] PlaceCommand == {(PlaceCommand is null ? "NULL" : "OK")}");
+            };
+        }
+        /*  Comando que a célula irá invocar  */
+        public static readonly DependencyProperty PlaceCommandProperty =
+            DependencyProperty.Register(nameof(PlaceCommand),
+                typeof(ICommand), typeof(BoardView));
+
+        public ICommand PlaceCommand
+        {
+            get => (ICommand)GetValue(PlaceCommandProperty);
+            set => SetValue(PlaceCommandProperty, value);
         }
     }
 }

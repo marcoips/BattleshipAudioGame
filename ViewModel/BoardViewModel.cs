@@ -2,7 +2,8 @@
 using System.Windows.Media;
 using System.Linq;                   //  ← para usar .First(.)
 using BattleshipAudioGame.Model;
-using System.Collections.Generic;   //  ← IEnumerable<>
+using System.Collections.Generic;
+using System.ComponentModel;//  ← IEnumerable<>
 
 namespace BattleshipAudioGame;
 
@@ -49,10 +50,28 @@ public class BoardViewModel
     }
 }
 
-public class GridCell
+public class GridCell : INotifyPropertyChanged
 {
-    public int Row { get; set; }
-    public int Column { get; set; }
-    public string Content { get; set; } = string.Empty;
-    public Brush Background { get; set; } = Brushes.LightGray;
+    private string _content = string.Empty;
+    private Brush _background = Brushes.LightGray;
+
+    public int Row { get; init; }
+    public int Column { get; init; }
+
+    public string Content
+    {
+        get => _content;
+        set { _content = value; OnPropertyChanged(nameof(Content)); }
+    }
+
+    public Brush Background
+    {
+        get => _background;
+        set { _background = value; OnPropertyChanged(nameof(Background)); }
+    }
+
+    /* ------------- INotifyPropertyChanged ------------- */
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged(string name) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

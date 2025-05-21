@@ -26,7 +26,7 @@ namespace BattleshipAudioGame.ViewModel
 
         public MainWindowViewModel()
             {
-                CurrentView = new StartGameViewModel(Navigate, IsAudioEnabled => IsAudioEnabled = enabled);
+                CurrentView = new StartGameViewModel(Navigate);
             }
 
         private void Navigate(string dest)
@@ -36,7 +36,7 @@ namespace BattleshipAudioGame.ViewModel
             {
                 "Placement" => new PlacementViewModel(Navigate/*, () => IsAudioEnabled*/), // criar mais tarde
                 //"Game" => new BattleViewModel(Navigate),    // criar mais tarde
-                "Start" => new StartGameViewModel(Navigate, IsAudioEnabled => IsAudioEnabled = enabled),
+                "Start" => new StartGameViewModel(Navigate),
                 _ => CurrentView
             };
             System.Diagnostics.Debug.WriteLine($"CurrentView = {CurrentView?.GetType().Name}");

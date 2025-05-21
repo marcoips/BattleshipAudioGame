@@ -13,6 +13,7 @@
     <UserControl.Resources>
         <!-- Template de uma célula 30×30 -->
         <DataTemplate x:Key="CellTemplate">
+            <!--
             <Border BorderBrush="DarkGray" BorderThickness="0.5"
                     Background="{Binding Background}"
                     Width="30" Height="30">
@@ -20,7 +21,17 @@
                            FontWeight="Bold"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
-            </Border>
+            </Border> -->
+
+            <Button BorderBrush="DarkGray" BorderThickness="0.5"
+            Background="{Binding Background}"
+            Content="{Binding Content}"
+            Command="{Binding PlaceCommand,
+                               RelativeSource={RelativeSource AncestorType=UserControl}}"
+            CommandParameter="{Binding}">
+                <Button.Width>30</Button.Width>
+                <Button.Height>30</Button.Height>
+            </Button>
         </DataTemplate>
     </UserControl.Resources>
 

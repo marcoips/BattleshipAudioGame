@@ -1,6 +1,8 @@
 ﻿using BattleshipAudioGame.Model;
+using BattleshipAudioGame.Serviços;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,11 +21,23 @@ namespace BattleshipAudioGame.ViewModel
 
         public ICommand ContinueCommand { get; }
 
+        private int _navioIndex = 0;
+        private bool _horizontal = true;
+        private List<Navio> __naviosAColocar;
+
+        
+
+        public ICommand AlterarOrientacaoCommand { get; }
+        public ICommand ColocarNavioCommand { get; }
+        public string OrientacaoTexto => _horizontal ? "Horizontal" : "Vertical";
+        public string NomeNavioAtual => __naviosAColocar[_navioIndex].nome_navio;
+        public bool PodeContinuar { get; private set; } = false;
+
 
         public PlacementViewModel(Action<string> navigate)
         {
             _navigate = navigate;
-            ContinueCommand = new RelayCommand(_ => _navigate("Game"));// placeholder
+            //ContinueCommand = new RelayCommand(_ => _navigate("Game"));// placeholder
             
 
 
@@ -32,17 +46,43 @@ namespace BattleshipAudioGame.ViewModel
             CpuBoard = new BoardViewModel { BoardTitle = "Tabuleiro do CPU" };
 
             /* 1️⃣  cria realmente as listas de navios */
-            CriarFrotaJogador();
+            PrepararFrotaJogador();
+            //CriarFrotaJogador();
             GerarFrotaCPU();
 
+            /* 3. comandos ------------------ */
+            AlterarOrientacaoCommand = new RelayCommand(_ => AlternarOrientacao());
+
+            ColocarNavioCommand = new RelayCommand(
+                param => ColocarNavio(param as GridCell)/*,
+                param => !PodeContinuar*/);
+
+            ContinueCommand = new RelayCommand(
+                _ => _navigate("Game"), _ => PodeContinuar); // só ativa no fim
+
+
             // COLOCAR NAVIOS
-            PlayerBoard.PreencherNavios(PlayerBoard.Navios, Brushes.Green);
+
             CpuBoard.PreencherNavios(CpuBoard.Navios, Brushes.Red);
 
             
         }
 
-        private void CriarFrotaJogador()
+        private void PrepararFrotaJogador()
+        {
+            __naviosAColocar = new List<Navio>
+            {
+                new("Carrier",     5,false,new()),
+                new("Battleship",  4,false,new()),
+                new("Cruiser",     3,false,new()),
+                new("Destroyer",   2,false,new()),
+                new("Submarine",   3,false,new())
+            };
+            //ainda nao preenche nada -será feito navio a navio
+            PlayerBoard.Navios = new List<Navio>();
+        }
+
+        /*private void CriarFrotaJogador()
         {
             PlayerBoard.Navios = new List<Navio>
             {
@@ -52,7 +92,7 @@ namespace BattleshipAudioGame.ViewModel
                 new("Destroyer",   2,false,new(){ "D1","D2"}),
                 new("Submarine",   3,false,new(){ "E1","E2","E3"})
             };
-        }
+        }*/
 
         public void GerarFrotaCPU()
         {
@@ -66,6 +106,68 @@ namespace BattleshipAudioGame.ViewModel
                 CriarAleatorio("Submarine",3,ocupadas),
             };
         }
+
+        private void AlternarOrientacao()
+        {
+            _horizontal = !_horizontal;
+            OnPropertyChanged(nameof(OrientacaoTexto));
+        }
+
+        
+        private void ColocarNavio(GridCell? cell)
+        {
+            Debug.WriteLine($"CLICK {cell?.Row},{cell?.Column}");
+            if (PodeContinuar || cell is null) return; // já terminado ou clique inválido
+
+            var navio = __naviosAColocar[_navioIndex];
+            var posicoes = GerarPosicoes (cell.Row, cell.Column, navio.tamanho_navio,_horizontal);
+
+            if (!ValidarPosicoes(posicoes))
+            {
+                return;
+            }
+            Debug.WriteLine("PASSOU validação");
+            navio.localizacao = posicoes;
+            PlayerBoard.Navios.Add(navio);
+            PlayerBoard.PreencherNavios(new[] { navio }, Brushes.Green);
+            Debug.WriteLine("PINTADO");
+            _navioIndex++;
+
+            if (_navioIndex >= __naviosAColocar.Count)
+            {
+                // frota completa — ativar botão Continuar
+                PodeContinuar = true;
+                OnPropertyChanged(nameof(PodeContinuar));
+
+                CommandManager.InvalidateRequerySuggested(); //  ← força CanExecute a refazer
+                
+            }
+            else
+            {
+                OnPropertyChanged(nameof(NomeNavioAtual));
+            }
+
+        }
+
+        private List<string> GerarPosicoes(int row, int col, int tamanho, bool horizontal)
+        {
+            var pos = new List<string>();
+            for (int i = 0; i < tamanho; i++)
+            {
+                int r = row + (horizontal ? 0 : i);
+                int c = col + (horizontal ? i : 0);
+                if (r >= 10 || c >= 10) return new(); // fora do tabuleiro
+                pos.Add($"{(char)('A' + r)}{c + 1}");
+            }
+            return pos;
+        }
+
+        private bool ValidarPosicoes(List<string> posicoes)
+        {
+            if (posicoes.Count == 0) return false;
+            return !PlayerBoard.Navios.Any(n => n.localizacao.Any(posicoes.Contains));
+        }
+
 
         private Navio CriarAleatorio (string nome, int tamanho, List<string> ocupadas)
         {
