@@ -10,7 +10,8 @@ namespace BattleshipAudioGame.Model
     {
         public string nome_navio { get; private set; }
         public int tamanho_navio { get; private set; }
-        public bool afundado { get; private set; }
+        public bool afundado { get; set; }
+
         public List<string> localizacao { get; set; }
 
         public Navio(string name, int tamanho, bool afundado, List<string> localizacao)

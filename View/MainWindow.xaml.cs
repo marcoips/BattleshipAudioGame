@@ -494,20 +494,34 @@ public partial class MainWindow : Window
         if (cell == null)
             return;
 
-        // Verifica se já foi disparado nesta célula
         if (cell.Content?.ToString() == "X" || cell.Content?.ToString() == "O")
         {
             _synthesizer.Speak("You already shot at this position. Try another one.");
             return;
         }
 
-        // Verifica se acertou algum navio
-        bool hit = cpuBoardViewModel.Navios.Any(n => n.localizacao.Contains(position));
-        if (hit)
+        var hitShip = cpuBoardViewModel.Navios.FirstOrDefault(n => n.localizacao.Contains(position));
+        if (hitShip != null)
         {
             cell.Content = "X";
             cell.Background = Brushes.Black;
             _synthesizer.Speak("Hit!");
+
+            // Verifica se o navio foi afundado
+            bool isSunk = hitShip.localizacao.All(pos =>
+            {
+                int r = pos[0] - 'A';
+                int c = int.Parse(pos.Substring(1)) - 1;
+                var shipCell = cpuBoardViewModel.Cells.FirstOrDefault(cell2 => cell2.Row == r && cell2.Column == c);
+                return shipCell != null && shipCell.Content?.ToString() == "X";
+            });
+
+            if (isSunk && !hitShip.afundado)
+            {
+                hitShip.afundado = true;
+                int shipsLeft = cpuBoardViewModel.Navios.Count(n => !n.afundado);
+                _synthesizer.Speak($"You sunk the {hitShip.nome_navio}! {shipsLeft} ship{(shipsLeft == 1 ? "" : "s")} remaining.");
+            }
         }
         else
         {
@@ -518,6 +532,7 @@ public partial class MainWindow : Window
 
         DisplayGrid();
     }
+
 
     private void CpuShot()
     {
@@ -536,12 +551,28 @@ public partial class MainWindow : Window
         }
 
         var playerCell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
-        bool hit = playerBoardViewModel.Navios.Any(n => n.localizacao.Contains(position));
-        if (hit)
+        var hitShip = playerBoardViewModel.Navios.FirstOrDefault(n => n.localizacao.Contains(position));
+        if (hitShip != null)
         {
             playerCell.Content = "X";
             playerCell.Background = Brushes.Black;
             _synthesizer.Speak($"CPU fires at {position}. Hit!");
+
+            // Verifica se o navio foi afundado
+            bool isSunk = hitShip.localizacao.All(pos =>
+            {
+                int r = pos[0] - 'A';
+                int c = int.Parse(pos.Substring(1)) - 1;
+                var shipCell = playerBoardViewModel.Cells.FirstOrDefault(cell2 => cell2.Row == r && cell2.Column == c);
+                return shipCell != null && shipCell.Content?.ToString() == "X";
+            });
+
+            if (isSunk && !hitShip.afundado)
+            {
+                hitShip.afundado = true;
+                int shipsLeft = playerBoardViewModel.Navios.Count(n => !n.afundado);
+                _synthesizer.Speak($"CPU sunk your {hitShip.nome_navio}! You have {shipsLeft} ship{(shipsLeft == 1 ? "" : "s")} remaining.");
+            }
         }
         else
         {
@@ -552,6 +583,7 @@ public partial class MainWindow : Window
 
         DisplayGrid();
     }
+
 
 
 
