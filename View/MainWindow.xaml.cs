@@ -180,8 +180,11 @@ public partial class MainWindow : Window
             if (e.Result.Text == "yes")
             {
                 PlayerShot(_selectedShotPosition);
-                // Aqui pode alternar para o turno do CPU ou repetir o disparo, conforme sua lógica de jogo
-                _currentContext = "player_shoot"; // Ou outro contexto, se desejar
+
+                CpuShot();
+
+                _synthesizer.Speak("Your turn. Say the position to fire at the CPU board.");
+                _currentContext = "player_shoot"; 
             }
             else if (e.Result.Text == "no")
             {
@@ -503,7 +506,7 @@ public partial class MainWindow : Window
         if (hit)
         {
             cell.Content = "X";
-            cell.Background = Brushes.OrangeRed;
+            cell.Background = Brushes.Black;
             _synthesizer.Speak("Hit!");
         }
         else
@@ -515,5 +518,41 @@ public partial class MainWindow : Window
 
         DisplayGrid();
     }
+
+    private void CpuShot()
+    {
+        var random = new Random();
+        string position;
+        int row, col;
+        // Find a random cell that hasn't been shot yet
+        while (true)
+        {
+            row = random.Next(0, 10);
+            col = random.Next(0, 10);
+            position = $"{(char)('A' + row)}{col + 1}";
+            var cell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+            if (cell != null && cell.Content?.ToString() != "X" && cell.Content?.ToString() != "O")
+                break;
+        }
+
+        var playerCell = playerBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+        bool hit = playerBoardViewModel.Navios.Any(n => n.localizacao.Contains(position));
+        if (hit)
+        {
+            playerCell.Content = "X";
+            playerCell.Background = Brushes.Black;
+            _synthesizer.Speak($"CPU fires at {position}. Hit!");
+        }
+        else
+        {
+            playerCell.Content = "O";
+            playerCell.Background = Brushes.LightBlue;
+            _synthesizer.Speak($"CPU fires at {position}. Miss!");
+        }
+
+        DisplayGrid();
+    }
+
+
 
 }
