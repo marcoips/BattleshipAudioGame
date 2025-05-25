@@ -24,6 +24,8 @@ public partial class MainWindow : Window
 
     private string _selectedPosition = string.Empty;
     private string _selectedDirection = string.Empty;
+    private string _selectedShotPosition = string.Empty;
+
 
     private bool _firstShipAnnounced = false;
 
@@ -152,7 +154,8 @@ public partial class MainWindow : Window
                     else
                     {
                         _synthesizer.Speak("All ships have been placed. Starting the game.");
-                        _currentContext = "start_game"; // Transition to the game phase
+                        _synthesizer.Speak("Your turn. Say the position to fire at the CPU board.");
+                        _currentContext = "player_shoot";
                     }
                 }
                 else
@@ -161,6 +164,32 @@ public partial class MainWindow : Window
                     _currentContext = "game";
                 }
             }
+        }
+        else if (_currentContext == "player_shoot")
+        {
+            string input = e.Result.Text;
+            if (input.Length >= 2 && char.IsLetter(input[0]) && int.TryParse(input.Substring(1), out int number))
+            {
+                _selectedShotPosition = $"{char.ToUpper(input[0])}{number}";
+                _synthesizer.Speak($"You selected position {_selectedShotPosition} to fire. Is this correct?");
+                _currentContext = "confirm_shot_position";
+            }
+        }
+        else if (_currentContext == "confirm_shot_position")
+        {
+            if (e.Result.Text == "yes")
+            {
+                PlayerShot(_selectedShotPosition);
+                // Aqui pode alternar para o turno do CPU ou repetir o disparo, conforme sua lógica de jogo
+                _currentContext = "player_shoot"; // Ou outro contexto, se desejar
+            }
+            else if (e.Result.Text == "no")
+            {
+                _synthesizer.Speak("Shot position not confirmed. Please say the position again.");
+                _currentContext = "player_shoot";
+            }
+
+
         }
     }
 
@@ -451,4 +480,40 @@ public partial class MainWindow : Window
 
         return true;
     }
+
+    private void PlayerShot(string position)
+    {
+        int row = position[0] - 'A';
+        int col = int.Parse(position.Substring(1)) - 1;
+
+        var cell = cpuBoardViewModel.Cells.FirstOrDefault(c => c.Row == row && c.Column == col);
+
+        if (cell == null)
+            return;
+
+        // Verifica se já foi disparado nesta célula
+        if (cell.Content?.ToString() == "X" || cell.Content?.ToString() == "O")
+        {
+            _synthesizer.Speak("You already shot at this position. Try another one.");
+            return;
+        }
+
+        // Verifica se acertou algum navio
+        bool hit = cpuBoardViewModel.Navios.Any(n => n.localizacao.Contains(position));
+        if (hit)
+        {
+            cell.Content = "X";
+            cell.Background = Brushes.OrangeRed;
+            _synthesizer.Speak("Hit!");
+        }
+        else
+        {
+            cell.Content = "O";
+            cell.Background = Brushes.LightBlue;
+            _synthesizer.Speak("Miss!");
+        }
+
+        DisplayGrid();
+    }
+
 }
