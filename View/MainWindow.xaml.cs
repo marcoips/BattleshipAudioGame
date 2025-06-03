@@ -85,10 +85,11 @@ public partial class MainWindow : Window
         // Exit command
         if (e.Result.Text == "exit")
         {
-            _synthesizer.Speak("Exiting the game. Goodbye!");
-            Application.Current.Shutdown(); // Close the application
+            _synthesizer.Speak("Are you sure you want to exit? Say yes or no.");
+            _currentContext = "confirm_exit";
             return;
         }
+
 
         // Different phases of the game
         if (_currentContext == "start")
@@ -194,6 +195,26 @@ public partial class MainWindow : Window
 
 
         }
+        else if (_currentContext == "confirm_exit")
+        {
+            if (e.Result.Text == "yes")
+            {
+                _synthesizer.Speak("Exiting the game. Goodbye!");
+                Application.Current.Shutdown();
+            }
+            else if (e.Result.Text == "no")
+            {
+                _synthesizer.Speak("Exit cancelled. Continuing the game.");
+                // Optionally, return to the previous context, e.g., "game" or "player_shoot"
+                // For simplicity, return to "game" if ships are still being placed, otherwise "player_shoot"
+                if (shipsToPlace.Count > 0)
+                    _currentContext = "game";
+                else
+                    _currentContext = "player_shoot";
+            }
+            return;
+        }
+
     }
 
     private void Button_Click(object sender, RoutedEventArgs e)
@@ -531,6 +552,7 @@ public partial class MainWindow : Window
         }
 
         DisplayGrid();
+        CheckForGameOver();
     }
 
 
@@ -582,7 +604,37 @@ public partial class MainWindow : Window
         }
 
         DisplayGrid();
+        CheckForGameOver();
     }
+
+    private void CheckForGameOver()
+    {
+        bool playerLost = playerBoardViewModel.Navios.All(n => n.afundado);
+        bool cpuLost = cpuBoardViewModel.Navios.All(n => n.afundado);
+
+        if (cpuLost)
+        {
+            _synthesizer.Speak("Congratulations! You have sunk all CPU ships. You win!");
+            _recognizer.RecognizeAsyncCancel();
+            _currentContext = "game_over";
+            RestartApplication();
+        }
+        else if (playerLost)
+        {
+            _synthesizer.Speak("All your ships have been sunk. CPU wins. Game over.");
+            _recognizer.RecognizeAsyncCancel();
+            _currentContext = "game_over";
+            RestartApplication();
+        }
+    }
+
+    private void RestartApplication()
+    {
+        System.Diagnostics.Process.Start(Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location);
+        Application.Current.Shutdown();
+    }
+
+
 
 
 
