@@ -526,6 +526,7 @@ public partial class MainWindow : Window
         {
             cell.Content = "X";
             cell.Background = Brushes.Black;
+            PlaySound("hit.wav"); 
             _synthesizer.Speak("Hit!");
 
             // Verifica se o navio foi afundado
@@ -548,6 +549,7 @@ public partial class MainWindow : Window
         {
             cell.Content = "O";
             cell.Background = Brushes.LightBlue;
+            PlaySound("miss.wav");
             _synthesizer.Speak("Miss!");
         }
 
@@ -578,6 +580,7 @@ public partial class MainWindow : Window
         {
             playerCell.Content = "X";
             playerCell.Background = Brushes.Black;
+            PlaySound("hit.wav");
             _synthesizer.Speak($"CPU fires at {position}. Hit!");
 
             // Verifica se o navio foi afundado
@@ -600,6 +603,7 @@ public partial class MainWindow : Window
         {
             playerCell.Content = "O";
             playerCell.Background = Brushes.LightBlue;
+            PlaySound("miss.wav");
             _synthesizer.Speak($"CPU fires at {position}. Miss!");
         }
 
@@ -632,6 +636,20 @@ public partial class MainWindow : Window
     {
         System.Diagnostics.Process.Start(Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location);
         Application.Current.Shutdown();
+    }
+
+    private void PlaySound(string soundFileName)
+    {
+        try
+        {
+            var player = new System.Media.SoundPlayer(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Sounds", soundFileName));
+            player.Play();
+        }
+        catch (Exception ex)
+        {
+            // Optionally log or ignore sound errors
+            Console.WriteLine($"Sound error: {ex.Message}");
+        }
     }
 
 

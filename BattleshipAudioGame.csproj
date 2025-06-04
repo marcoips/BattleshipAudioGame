@@ -9,6 +9,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Sounds\hit.mp3" />
+    <None Remove="Sounds\hit.wav" />
+    <None Remove="Sounds\miss.mp3" />
+    <None Remove="Sounds\miss.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Sounds\hit.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Sounds\miss.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.43.0" />
     <PackageReference Include="System.Speech" Version="9.0.3" />
   </ItemGroup>
