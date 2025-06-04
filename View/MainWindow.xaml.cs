@@ -405,7 +405,7 @@ public partial class MainWindow : Window
         // Add ships to the CPU's board with random positions
         var cpuCarrier = new Navio("Carrier", 5, false, GeneratePositionsCPU(5, occupiedPositions));
         occupiedPositions.AddRange(cpuCarrier.localizacao);
-
+        /*
         var cpuBattleship = new Navio("Battleship", 4, false, GeneratePositionsCPU(4, occupiedPositions));
         occupiedPositions.AddRange(cpuBattleship.localizacao);
 
@@ -417,9 +417,9 @@ public partial class MainWindow : Window
 
         var cpuSubmarine = new Navio("Submarine", 3, false, GeneratePositionsCPU(3, occupiedPositions));
         occupiedPositions.AddRange(cpuSubmarine.localizacao);
-
-        boardViewModel.Navios = new List<Navio> { cpuCarrier, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine };
-
+        */
+        boardViewModel.Navios = new List<Navio> { cpuCarrier /*, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine*/ };
+        
         // Update the grid cells to reflect the CPU's ships
         foreach (var ship in boardViewModel.Navios)
         {
@@ -621,22 +621,60 @@ public partial class MainWindow : Window
             _synthesizer.Speak("Congratulations! You have sunk all CPU ships. You win!");
             _recognizer.RecognizeAsyncCancel();
             _currentContext = "game_over";
-            RestartApplication();
+            ShowGameOverScreen("Congratulations! You have sunk all CPU ships. You win! Game over.");
         }
         else if (playerLost)
         {
             _synthesizer.Speak("All your ships have been sunk. CPU wins. Game over.");
             _recognizer.RecognizeAsyncCancel();
             _currentContext = "game_over";
-            RestartApplication();
+            ShowGameOverScreen("All your ships have been sunk. CPU wins. Game over.");
         }
     }
 
-    private void RestartApplication()
+    private void ShowGameOverScreen(string message)
     {
-        System.Diagnostics.Process.Start(Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location);
-        Application.Current.Shutdown();
+        MainContent.Children.Clear();
+
+        var resultText = new TextBlock
+        {
+            Text = message,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 24,
+            Margin = new Thickness(0, 40, 0, 20)
+        };
+
+        var playAgainButton = new Button
+        {
+            Content = "Play Again",
+            Width = 120,
+            Height = 40,
+            Margin = new Thickness(10)
+        };
+
+        var exitButton = new Button
+        {
+            Content = "Exit",
+            Width = 120,
+            Height = 40,
+            Margin = new Thickness(10)
+        };
+        exitButton.Click += (s, e) => Application.Current.Shutdown();
+
+        var stack = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        stack.Children.Add(resultText);
+        stack.Children.Add(playAgainButton);
+        stack.Children.Add(exitButton);
+
+        MainContent.Children.Add(stack);
     }
+
+    
 
     private void PlaySound(string soundFileName)
     {
