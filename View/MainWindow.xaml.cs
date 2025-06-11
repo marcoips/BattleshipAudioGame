@@ -26,7 +26,6 @@ public partial class MainWindow : Window
     private string _selectedDirection = string.Empty;
     private string _selectedShotPosition = string.Empty;
 
-
     private bool _firstShipAnnounced = false;
 
     private BoardViewModel playerBoardViewModel;
@@ -52,7 +51,7 @@ public partial class MainWindow : Window
                 positionChoices.Add($"{letter}{number}");
             }
         }
-        var fixedChoices = new Choices("play", "stop", "exit", "yes", "no", "horizontal", "vertical");
+        var fixedChoices = new Choices("play", "stop", "exit", "yes", "no", "horizontal", "vertical", "play again");
 
         var grammarBuilder = new GrammarBuilder();
         grammarBuilder.Append(new Choices(fixedChoices, positionChoices));
@@ -82,6 +81,10 @@ public partial class MainWindow : Window
     {
         Console.WriteLine($"Recognized: {e.Result.Text}");
 
+        // Only allow "play again" and "exit" after game over
+        if (_currentContext == "game_over" && e.Result.Text != "play again" && e.Result.Text != "exit")
+            return;
+
         // Exit command
         if (e.Result.Text == "exit")
         {
@@ -89,7 +92,6 @@ public partial class MainWindow : Window
             _currentContext = "confirm_exit";
             return;
         }
-
 
         // Different phases of the game
         if (_currentContext == "start")
@@ -185,15 +187,13 @@ public partial class MainWindow : Window
                 CpuShot();
 
                 _synthesizer.Speak("Your turn. Say the position to fire at the CPU board.");
-                _currentContext = "player_shoot"; 
+                _currentContext = "player_shoot";
             }
             else if (e.Result.Text == "no")
             {
                 _synthesizer.Speak("Shot position not confirmed. Please say the position again.");
                 _currentContext = "player_shoot";
             }
-
-
         }
         else if (_currentContext == "confirm_exit")
         {
@@ -205,8 +205,6 @@ public partial class MainWindow : Window
             else if (e.Result.Text == "no")
             {
                 _synthesizer.Speak("Exit cancelled. Continuing the game.");
-                // Optionally, return to the previous context, e.g., "game" or "player_shoot"
-                // For simplicity, return to "game" if ships are still being placed, otherwise "player_shoot"
                 if (shipsToPlace.Count > 0)
                     _currentContext = "game";
                 else
@@ -214,7 +212,18 @@ public partial class MainWindow : Window
             }
             return;
         }
-
+        else if (_currentContext == "game_over")
+        {
+            if (e.Result.Text == "play again")
+            {
+                RestartGame();
+            }
+            else if (e.Result.Text == "exit")
+            {
+                _synthesizer.Speak("Exiting the game. Goodbye!");
+                Application.Current.Shutdown();
+            }
+        }
     }
 
     private void Button_Click(object sender, RoutedEventArgs e)
@@ -238,7 +247,6 @@ public partial class MainWindow : Window
     private void SpeakTutorial()
     {
         _synthesizer.Speak("The Battleship Audio Game is a voice-controlled game where you command your fleet to sink enemy ships. Use commands like fire, move, and scan to play. Good luck!");
-
         DisplayGrid();
     }
 
@@ -272,8 +280,6 @@ public partial class MainWindow : Window
             _synthesizer.Speak($"The {shipsToPlace[0].nome_navio} is first. Please place it.");
             _firstShipAnnounced = true; // Mark the first ship as announced
         }
-
-
     }
 
     private Grid CreateBoardGrid(BoardViewModel boardViewModel, string title)
@@ -419,7 +425,7 @@ public partial class MainWindow : Window
         occupiedPositions.AddRange(cpuSubmarine.localizacao);
         */
         boardViewModel.Navios = new List<Navio> { cpuCarrier /*, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine*/ };
-        
+
         // Update the grid cells to reflect the CPU's ships
         foreach (var ship in boardViewModel.Navios)
         {
@@ -500,8 +506,6 @@ public partial class MainWindow : Window
         // Refresh the player's grid
         DisplayGrid();
 
-        
-
         return true;
     }
 
@@ -526,7 +530,7 @@ public partial class MainWindow : Window
         {
             cell.Content = "X";
             cell.Background = Brushes.Black;
-            PlaySound("hit.wav"); 
+            PlaySound("hit.wav");
             _synthesizer.Speak("Hit!");
 
             // Verifica se o navio foi afundado
@@ -556,7 +560,6 @@ public partial class MainWindow : Window
         DisplayGrid();
         CheckForGameOver();
     }
-
 
     private void CpuShot()
     {
@@ -652,6 +655,7 @@ public partial class MainWindow : Window
             Height = 40,
             Margin = new Thickness(10)
         };
+        playAgainButton.Click += (s, e) => RestartGame();
 
         var exitButton = new Button
         {
@@ -674,7 +678,25 @@ public partial class MainWindow : Window
         MainContent.Children.Add(stack);
     }
 
-    
+    private void RestartGame()
+    {
+        playerBoardViewModel = new BoardViewModel();
+        cpuBoardViewModel = new BoardViewModel();
+        GenerateCpuShips(cpuBoardViewModel);
+        shipsToPlace = new List<Navio>
+        {
+            new Navio("Carrier", 5, false, new List<string>()),
+            new Navio("Battleship", 4, false, new List<string>()),
+            new Navio("Cruiser", 3, false, new List<string>()),
+            new Navio("Submarine", 3, false, new List<string>()),
+            new Navio("Destroyer", 2, false, new List<string>())
+        };
+        _firstShipAnnounced = false;
+        DisplayGrid();
+        _synthesizer.Speak("New game started. Place your ships.");
+        _currentContext = "game";
+        _recognizer.RecognizeAsync(RecognizeMode.Multiple); // Restart speech recognition
+    }
 
     private void PlaySound(string soundFileName)
     {
@@ -689,10 +711,4 @@ public partial class MainWindow : Window
             Console.WriteLine($"Sound error: {ex.Message}");
         }
     }
-
-
-
-
-
-
 }
