@@ -33,6 +33,9 @@ public partial class MainWindow : Window
 
     private List<Navio> shipsToPlace;
 
+    // Add this flag for safe recognizer restart
+    private bool _pendingRestart = false;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -61,6 +64,7 @@ public partial class MainWindow : Window
 
         _recognizer.LoadGrammar(grammar);
         _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
+        _recognizer.RecognizeCompleted += Recognizer_RecognizeCompleted; // Subscribe to completion event
         _recognizer.SetInputToDefaultAudioDevice();
         _recognizer.RecognizeAsync(RecognizeMode.Multiple);
 
@@ -195,7 +199,6 @@ public partial class MainWindow : Window
                 _currentContext = "select_direction";
             }
         }
-
         else if (_currentContext == "player_shoot")
         {
             string input = e.Result.Text;
@@ -260,6 +263,16 @@ public partial class MainWindow : Window
                 Application.Current.Shutdown();
             }
             return;
+        }
+    }
+
+    // Recognizer completion event handler for safe restart
+    private void Recognizer_RecognizeCompleted(object sender, RecognizeCompletedEventArgs e)
+    {
+        if (_pendingRestart)
+        {
+            _pendingRestart = false;
+            _recognizer.RecognizeAsync(RecognizeMode.Multiple);
         }
     }
 
@@ -719,8 +732,8 @@ public partial class MainWindow : Window
         DisplayGrid();
         _synthesizer.Speak("New game started. Place your ships.");
         _currentContext = "game";
+        _pendingRestart = true;
         _recognizer.RecognizeAsyncCancel();
-        _recognizer.RecognizeAsync(RecognizeMode.Multiple);
     }
 
     private void PlaySound(string soundFileName)
