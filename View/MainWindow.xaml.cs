@@ -38,6 +38,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         _synthesizer = new SpeechSynthesizer();
 
+        // Welcome message and wait for "play"
+        _synthesizer.Speak("Hello, welcome to the Battleship Audio Game! Say play to begin.");
         _currentContext = "start";
 
         // Speech recognition
@@ -66,14 +68,16 @@ public partial class MainWindow : Window
         cpuBoardViewModel = new BoardViewModel();
         GenerateCpuShips(cpuBoardViewModel);
 
-        // Initialize the list of ships to place
+        // Initialize the list of ships to place (keep commented ships for debugging)
         shipsToPlace = new List<Navio>
         {
             new Navio("Carrier", 5, false, new List<string>()),
+            /*
             new Navio("Battleship", 4, false, new List<string>()),
             new Navio("Cruiser", 3, false, new List<string>()),
             new Navio("Submarine", 3, false, new List<string>()),
             new Navio("Destroyer", 2, false, new List<string>())
+            */
         };
     }
 
@@ -93,13 +97,24 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Different phases of the game
+        // Game start: wait for "play"
         if (_currentContext == "start")
         {
             if (e.Result.Text == "play")
             {
-                Button_Click(this, new RoutedEventArgs());
+                MainContent.Children.Clear();
+                var newText = new TextBlock
+                {
+                    Text = "Do you want to hear the tutorial?",
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    FontSize = 20
+                };
+                MainContent.Children.Add(newText);
+                _synthesizer.Speak("Do you want to hear the tutorial?");
+                _currentContext = "tutorial";
             }
+            return;
         }
         else if (_currentContext == "tutorial")
         {
@@ -145,8 +160,15 @@ public partial class MainWindow : Window
             if (e.Result.Text == "horizontal" || e.Result.Text == "vertical")
             {
                 _selectedDirection = e.Result.Text;
-                _synthesizer.Speak($"You selected {_selectedDirection} direction. Placing the ship...");
-
+                _synthesizer.Speak($"You selected {_selectedDirection} direction. Is this correct?");
+                _currentContext = "confirm_direction";
+            }
+        }
+        else if (_currentContext == "confirm_direction")
+        {
+            if (e.Result.Text == "yes")
+            {
+                _synthesizer.Speak($"Direction confirmed. Placing the ship...");
                 if (TryPlaceShip(_selectedPosition, _selectedDirection))
                 {
                     if (shipsToPlace.Count > 0)
@@ -167,7 +189,13 @@ public partial class MainWindow : Window
                     _currentContext = "game";
                 }
             }
+            else if (e.Result.Text == "no")
+            {
+                _synthesizer.Speak("Direction not confirmed. Please say the direction again: horizontal or vertical?");
+                _currentContext = "select_direction";
+            }
         }
+
         else if (_currentContext == "player_shoot")
         {
             string input = e.Result.Text;
@@ -184,10 +212,18 @@ public partial class MainWindow : Window
             {
                 PlayerShot(_selectedShotPosition);
 
-                CpuShot();
+                // Only let the CPU shoot if the game is not over
+                if (_currentContext != "game_over")
+                {
+                    CpuShot();
+                }
 
-                _synthesizer.Speak("Your turn. Say the position to fire at the CPU board.");
-                _currentContext = "player_shoot";
+                // Only prompt for next turn if the game is not over
+                if (_currentContext != "game_over")
+                {
+                    _synthesizer.Speak("Your turn. Say the position to fire at the CPU board.");
+                    _currentContext = "player_shoot";
+                }
             }
             else if (e.Result.Text == "no")
             {
@@ -223,25 +259,8 @@ public partial class MainWindow : Window
                 _synthesizer.Speak("Exiting the game. Goodbye!");
                 Application.Current.Shutdown();
             }
+            return;
         }
-    }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
-        MainContent.Children.Clear();
-        _synthesizer.Speak("Hello, welcome to the Battleship Audio Game!");
-
-        var newText = new TextBlock
-        {
-            Text = "Do you wanna hear the tutorial?",
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            FontSize = 20
-        };
-
-        MainContent.Children.Add(newText);
-        _synthesizer.Speak("Do you wanna hear the tutorial?");
-        _currentContext = "tutorial";
     }
 
     private void SpeakTutorial()
@@ -621,21 +640,23 @@ public partial class MainWindow : Window
 
         if (cpuLost)
         {
-            _synthesizer.Speak("Congratulations! You have sunk all CPU ships. You win!");
+            _synthesizer.Speak("Congratulations! You have sunk all CPU ships. You win! Game over. Do you want to play again or exit?");
             _recognizer.RecognizeAsyncCancel();
             _currentContext = "game_over";
-            ShowGameOverScreen("Congratulations! You have sunk all CPU ships. You win! Game over.");
+            ShowGameOverPrompt("Congratulations! You have sunk all CPU ships. You win! Game over.\nDo you want to play again or exit?");
+            _recognizer.RecognizeAsync(RecognizeMode.Multiple);
         }
         else if (playerLost)
         {
-            _synthesizer.Speak("All your ships have been sunk. CPU wins. Game over.");
+            _synthesizer.Speak("All your ships have been sunk. CPU wins. Game over. Do you want to play again or exit?");
             _recognizer.RecognizeAsyncCancel();
             _currentContext = "game_over";
-            ShowGameOverScreen("All your ships have been sunk. CPU wins. Game over.");
+            ShowGameOverPrompt("All your ships have been sunk. CPU wins. Game over.\nDo you want to play again or exit?");
+            _recognizer.RecognizeAsync(RecognizeMode.Multiple);
         }
     }
 
-    private void ShowGameOverScreen(string message)
+    private void ShowGameOverPrompt(string message)
     {
         MainContent.Children.Clear();
 
@@ -645,7 +666,8 @@ public partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             FontSize = 24,
-            Margin = new Thickness(0, 40, 0, 20)
+            Margin = new Thickness(0, 40, 0, 20),
+            TextAlignment = TextAlignment.Center
         };
 
         var playAgainButton = new Button
@@ -686,16 +708,19 @@ public partial class MainWindow : Window
         shipsToPlace = new List<Navio>
         {
             new Navio("Carrier", 5, false, new List<string>()),
+            /*
             new Navio("Battleship", 4, false, new List<string>()),
             new Navio("Cruiser", 3, false, new List<string>()),
             new Navio("Submarine", 3, false, new List<string>()),
             new Navio("Destroyer", 2, false, new List<string>())
+            */
         };
         _firstShipAnnounced = false;
         DisplayGrid();
         _synthesizer.Speak("New game started. Place your ships.");
         _currentContext = "game";
-        _recognizer.RecognizeAsync(RecognizeMode.Multiple); // Restart speech recognition
+        _recognizer.RecognizeAsyncCancel();
+        _recognizer.RecognizeAsync(RecognizeMode.Multiple);
     }
 
     private void PlaySound(string soundFileName)
