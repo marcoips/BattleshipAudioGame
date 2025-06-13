@@ -12,9 +12,7 @@ using BattleshipAudioGame.Model;
 
 namespace BattleshipAudioGame;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
+
 public partial class MainWindow : Window
 {
     private SpeechRecognitionEngine _recognizer;
@@ -75,13 +73,11 @@ public partial class MainWindow : Window
         // Initialize the list of ships to place (keep commented ships for debugging)
         shipsToPlace = new List<Navio>
         {
-            new Navio("Carrier", 5, false, new List<string>()),
-            /*
+            new Navio("Carrier", 5, false, new List<string>()),            
             new Navio("Battleship", 4, false, new List<string>()),
             new Navio("Cruiser", 3, false, new List<string>()),
             new Navio("Submarine", 3, false, new List<string>()),
-            new Navio("Destroyer", 2, false, new List<string>())
-            */
+            new Navio("Destroyer", 2, false, new List<string>())            
         };
     }
 
@@ -125,7 +121,7 @@ public partial class MainWindow : Window
             if (e.Result.Text == "yes")
             {
                 SpeakTutorial();
-                _currentContext = string.Empty; // Reset context
+                _currentContext = "game"; // Reset context
             }
             else if (e.Result.Text == "no")
             {
@@ -278,9 +274,33 @@ public partial class MainWindow : Window
 
     private void SpeakTutorial()
     {
-        _synthesizer.Speak("The Battleship Audio Game is a voice-controlled game where you command your fleet to sink enemy ships. Use commands like fire, move, and scan to play. Good luck!");
+        _synthesizer.Speak("Welcome to the Battleship Audio Game tutorial.");
+
+        _synthesizer.Speak("The objective of Battleship is to sink all of your opponent's ships before they sink yours.");
+
+        _synthesizer.Speak("Each player has five ships to place on a ten by ten grid. The ships are: Carrier, which is five spaces long; Battleship, four spaces; Cruiser, three spaces; Submarine, three spaces; and Destroyer, two spaces.");
+
+        _synthesizer.Speak("You will place your ships by saying a position, for example, A1, and then a direction, horizontal or vertical. You will be asked to confirm each choice before the ship is placed.");
+
+        _synthesizer.Speak("After all your ships are placed, the game begins. On your turn, say the position you want to fire at, such as B5. You will be asked to confirm your shot.");
+
+        _synthesizer.Speak("If you hit an enemy ship, you will hear this sound:");
+        PlaySound("hit.wav");
+
+        _synthesizer.Speak("If you miss, you will hear this sound:");
+        PlaySound("miss.wav");
+
+        _synthesizer.Speak("When you sink an enemy ship, you will be notified by voice.");
+
+        _synthesizer.Speak("If you try to shoot at a position you already targeted, you will be told to try another one.");
+
+        _synthesizer.Speak("You can say 'exit' at any time to leave the game, or 'play again' after a game over to start a new match.");
+
+        _synthesizer.Speak("Good luck, and enjoy the game!");
+
         DisplayGrid();
     }
+
 
     private void DisplayGrid()
     {
@@ -443,7 +463,7 @@ public partial class MainWindow : Window
         // Add ships to the CPU's board with random positions
         var cpuCarrier = new Navio("Carrier", 5, false, GeneratePositionsCPU(5, occupiedPositions));
         occupiedPositions.AddRange(cpuCarrier.localizacao);
-        /*
+        
         var cpuBattleship = new Navio("Battleship", 4, false, GeneratePositionsCPU(4, occupiedPositions));
         occupiedPositions.AddRange(cpuBattleship.localizacao);
 
@@ -455,12 +475,13 @@ public partial class MainWindow : Window
 
         var cpuSubmarine = new Navio("Submarine", 3, false, GeneratePositionsCPU(3, occupiedPositions));
         occupiedPositions.AddRange(cpuSubmarine.localizacao);
-        */
-        boardViewModel.Navios = new List<Navio> { cpuCarrier /*, cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine*/ };
+        
+        boardViewModel.Navios = new List<Navio> { cpuCarrier , cpuBattleship, cpuCruiser, cpuDestroyer, cpuSubmarine };
 
         // Update the grid cells to reflect the CPU's ships
+        /*
         foreach (var ship in boardViewModel.Navios)
-        {
+        {   
             foreach (var position in ship.localizacao)
             {
                 var row = position[0] - 'A'; // Convert row letter to index (e.g., 'A' -> 0)
@@ -473,6 +494,11 @@ public partial class MainWindow : Window
                     cell.Background = Brushes.Red; // Change background color to indicate ship presence
                 }
             }
+        }*/
+        foreach (var cell in boardViewModel.Cells)
+        {
+            cell.Content = ""; // ou null
+            cell.Background = Brushes.White; // ou a cor padrão do seu tabuleiro
         }
     }
 
@@ -720,13 +746,11 @@ public partial class MainWindow : Window
         GenerateCpuShips(cpuBoardViewModel);
         shipsToPlace = new List<Navio>
         {
-            new Navio("Carrier", 5, false, new List<string>()),
-            /*
+            new Navio("Carrier", 5, false, new List<string>()),            
             new Navio("Battleship", 4, false, new List<string>()),
             new Navio("Cruiser", 3, false, new List<string>()),
             new Navio("Submarine", 3, false, new List<string>()),
-            new Navio("Destroyer", 2, false, new List<string>())
-            */
+            new Navio("Destroyer", 2, false, new List<string>())            
         };
         _firstShipAnnounced = false;
         DisplayGrid();
